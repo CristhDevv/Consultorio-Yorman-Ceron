@@ -1,0 +1,233 @@
+"use client"
+
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { PatientInput } from "../actions"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert"
+
+interface PatientFormProps {
+  initialData?: PatientInput & { id: string }
+  onSubmit: (data: PatientInput) => Promise<{ success: boolean; error?: string }>
+}
+
+export default function PatientForm({ initialData, onSubmit }: PatientFormProps) {
+  const router = useRouter()
+  
+  const [fullName, setFullName] = useState(initialData?.full_name || "")
+  const [documentId, setDocumentId] = useState(initialData?.document_id || "")
+  const [phone, setPhone] = useState(initialData?.phone || "")
+  const [email, setEmail] = useState(initialData?.email || "")
+  const [birthDate, setBirthDate] = useState(initialData?.birth_date || "")
+  const [address, setAddress] = useState(initialData?.address || "")
+  
+  // Clínicos
+  const [allergies, setAllergies] = useState(initialData?.allergies || "")
+  const [diseases, setDiseases] = useState(initialData?.diseases || "")
+  const [currentMedications, setCurrentMedications] = useState(initialData?.current_medications || "")
+  const [medicalObservations, setMedicalObservations] = useState(initialData?.medical_observations || "")
+
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrorMsg(null)
+
+    const result = await onSubmit({
+      full_name: fullName,
+      document_id: documentId,
+      phone,
+      email,
+      birth_date: birthDate,
+      address,
+      allergies,
+      diseases,
+      current_medications: currentMedications,
+      medical_observations: medicalObservations,
+    })
+
+    if (result.success) {
+      router.push("/patients")
+      router.refresh()
+    } else {
+      setErrorMsg(result.error || "Ocurrió un error al procesar el formulario.")
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-4xl mx-auto">
+      {errorMsg && (
+        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-200">
+          <AlertTitle>Error de validación</AlertTitle>
+          <AlertDescription>{errorMsg}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Datos Personales */}
+        <Card className="bg-slate-900 border-slate-800 text-slate-100">
+          <CardHeader>
+            <CardTitle className="text-white text-lg">Información Personal</CardTitle>
+            <CardDescription className="text-slate-400">
+              Filiación básica y datos de contacto del paciente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="fullName" className="text-slate-300">Nombre Completo *</Label>
+              <Input
+                id="fullName"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Juan Pérez"
+                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="documentId" className="text-slate-300">Cédula o Documento *</Label>
+              <Input
+                id="documentId"
+                required
+                value={documentId}
+                onChange={(e) => setDocumentId(e.target.value)}
+                placeholder="1723456789"
+                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="birthDate" className="text-slate-300">Fecha de Nacimiento *</Label>
+              <Input
+                id="birthDate"
+                type="date"
+                required
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="phone" className="text-slate-300">Teléfono de Contacto</Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="0998765432"
+                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email" className="text-slate-300">Correo Electrónico</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="juan@example.com"
+                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="address" className="text-slate-300">Dirección</Label>
+              <Input
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Av. 10 de Agosto y Colón"
+                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Antecedentes Clínicos */}
+        <Card className="bg-slate-900 border-slate-800 text-slate-100">
+          <CardHeader>
+            <CardTitle className="text-white text-lg">Historial y Antecedentes Clínicos</CardTitle>
+            <CardDescription className="text-slate-400">
+              Datos críticos de salud obligatorios antes de realizar cualquier intervención.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="allergies" className="text-red-400 font-semibold">Alergias conocidas</Label>
+              <textarea
+                id="allergies"
+                value={allergies}
+                onChange={(e) => setAllergies(e.target.value)}
+                placeholder="Ej: Alérgico a la Penicilina, látex, etc. Dejar vacío si no reporta."
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-red-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="diseases" className="text-amber-400 font-semibold">Enfermedades crónicas / sistémicas</Label>
+              <textarea
+                id="diseases"
+                value={diseases}
+                onChange={(e) => setDiseases(e.target.value)}
+                placeholder="Ej: Hipertensión arterial, Diabetes tipo 2, Hemofilia, etc."
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-amber-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="currentMedications" className="text-cyan-400 font-semibold">Medicamentos Actuales</Label>
+              <textarea
+                id="currentMedications"
+                value={currentMedications}
+                onChange={(e) => setCurrentMedications(e.target.value)}
+                placeholder="Medicamentos que toma actualmente con dosis."
+                rows={2}
+                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="medicalObservations" className="text-slate-300">Observaciones Generales</Label>
+              <textarea
+                id="medicalObservations"
+                value={medicalObservations}
+                onChange={(e) => setMedicalObservations(e.target.value)}
+                placeholder="Cualquier otra observación relevante para el expediente clínico."
+                rows={2}
+                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex justify-end gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          className="border-slate-800 text-slate-300 hover:bg-slate-800"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+        >
+          {loading ? "Procesando..." : initialData ? "Guardar Cambios" : "Registrar Paciente"}
+        </Button>
+      </div>
+    </form>
+  )
+}
