@@ -1,0 +1,39 @@
+name: Continuous Integration
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    name: Lint, Test, and Build
+    runs-on: ubuntu-latest
+
+    # NOTA: Los secretos NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY
+    # deben ser configurados manualmente en la interfaz web de GitHub en:
+    # Settings -> Secrets and variables -> Actions -> New repository secret.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Run Test Suite
+        run: npm run test
+
+      - name: Build Application
+        run: npm run build
