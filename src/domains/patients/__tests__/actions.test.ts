@@ -29,7 +29,10 @@ describe('Patients Actions', () => {
       from: vi.fn(),
     };
 
-    vi.mocked(createClient).mockResolvedValue(mockSupabase);
+    // Es seguro hacer cast a la firma de retorno de createClient ya que en este contexto
+    // de prueba unitaria solo necesitamos y validamos los métodos mockeados ('auth' y 'from'),
+    // evitando simular innecesariamente todo el cliente completo de Supabase.
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>);
   });
 
   describe('createPatient', () => {

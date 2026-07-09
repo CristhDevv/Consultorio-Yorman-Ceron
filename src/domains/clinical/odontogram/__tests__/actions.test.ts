@@ -33,7 +33,10 @@ describe('Odontogram Actions', () => {
       from: vi.fn(),
     };
 
-    vi.mocked(createClient).mockResolvedValue(mockSupabase);
+    // Es seguro hacer cast a la firma de retorno de createClient ya que en este contexto
+    // de prueba unitaria solo necesitamos y validamos los métodos mockeados ('auth' y 'from'),
+    // evitando simular innecesariamente todo el cliente completo de Supabase.
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>);
   });
 
   // ---------------------------------------------------------------------------
@@ -264,6 +267,28 @@ describe('Odontogram Actions', () => {
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({ notes: null })
       );
+    });
+
+    it('should return a friendly error message when a unique violation occurs on whole-tooth states (PostgreSQL error 23505)', async () => {
+      // Arrange
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'user-xyz' } },
+      });
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        error: { code: '23505', message: 'duplicate key value violates unique constraint' },
+      });
+      mockSupabase.from.mockReturnValue({ insert: mockInsert });
+
+      // Act
+      const result = await createOdontogramRecord(baseInput);
+
+      // Assert
+      expect(result).toEqual({
+        success: false,
+        error: "No es posible registrar este estado clínico. La pieza dental ya cuenta con un diagnóstico de diente completo registrado (ausente o extracción indicada), o bien el nuevo estado entra en conflicto con el registro existente de esta pieza.",
+      });
+      expect(revalidatePath).not.toHaveBeenCalled();
     });
   });
 });

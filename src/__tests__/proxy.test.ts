@@ -53,16 +53,24 @@ describe('proxy middleware', () => {
     vi.clearAllMocks();
 
     // createServerClient returns a Supabase-shaped client with auth.getUser
+    // Cast seguro: el mock es un stub mínimo con solo auth.getUser, que es lo
+    // único que proxy.ts consume de este cliente. No es posible construir un
+    // SupabaseClient completo en un contexto de test, por lo que unknown as X
+    // es la única vía honesta (mismo patrón aprobado en los demás test files).
     vi.mocked(createServerClient).mockReturnValue({
       auth: { getUser: mockGetUser },
-    } as any);
+    } as unknown as ReturnType<typeof createServerClient>);
 
     // NextResponse.next() returns the mock pass-through response
-    vi.mocked(NextResponse.next).mockReturnValue(mockSupabaseResponse as any);
+    // Cast seguro: mockSupabaseResponse es un stub mínimo (solo cookies.set),
+    // suficiente para que proxy.ts pueda mutarlo y retornarlo sin errores.
+    vi.mocked(NextResponse.next).mockReturnValue(mockSupabaseResponse as unknown as NextResponse);
 
     // NextResponse.redirect() returns a distinct sentinel so we can assert
-    // which return path was taken when needed
-    vi.mocked(NextResponse.redirect).mockReturnValue({ redirected: true } as any);
+    // which return path was taken when needed.
+    // Cast seguro: { redirected: true } es un sentinel de identidad para aserciones
+    // de igualdad referencial; NextResponse hereda la propiedad redirected de Response.
+    vi.mocked(NextResponse.redirect).mockReturnValue({ redirected: true } as unknown as NextResponse);
   });
 
   // -------------------------------------------------------------------------

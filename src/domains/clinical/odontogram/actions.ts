@@ -47,6 +47,12 @@ export async function createOdontogramRecord(input: OdontogramRecordInput) {
   })
 
   if (error) {
+    if (error.code === "23505") {
+      return {
+        success: false,
+        error: "No es posible registrar este estado clínico. La pieza dental ya cuenta con un diagnóstico de diente completo registrado (ausente o extracción indicada), o bien el nuevo estado entra en conflicto con el registro existente de esta pieza."
+      }
+    }
     return { success: false, error: error.message }
   }
 

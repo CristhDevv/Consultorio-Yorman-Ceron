@@ -15,8 +15,8 @@ describe('getAvailableSlots availability calculator', () => {
 
     // Assert
     expect(result.length).toBe(totalExpectedSlots);
-    expect(result[0].starts_at).toBe(`${dateStr}T08:00:00.000Z`);
-    expect(result[result.length - 1].starts_at).toBe(`${dateStr}T17:30:00.000Z`);
+    expect(result[0].starts_at).toBe(`${dateStr}T00:00:00.000Z`);
+    expect(result[result.length - 1].starts_at).toBe(`${dateStr}T23:30:00.000Z`);
   });
 
   it('should exclude only the corresponding block of a 30-minute active appointment', () => {
@@ -26,6 +26,7 @@ describe('getAvailableSlots availability calculator', () => {
         starts_at: `${dateStr}T09:00:00.000Z`,
         duration_minutes: 30,
         status: 'programada',
+        appointment_type: 'control' as const,
       },
     ];
 
@@ -33,15 +34,17 @@ describe('getAvailableSlots availability calculator', () => {
     const result = getAvailableSlots(dentistId, dateStr, existing);
 
     // Assert
-    expect(result.length).toBe(totalExpectedSlots - 1);
-    // Verificar que el bloque de las 09:00 no existe en la lista de slots disponibles
+    expect(result.length).toBe(totalExpectedSlots - 2);
+    // Verificar que el bloque de las 09:00 y 09:30 (por buffer) no existen en la lista de slots disponibles
     const hasNineAm = result.some((slot) => slot.starts_at === `${dateStr}T09:00:00.000Z`);
-    expect(hasNineAm).toBe(false);
-    // Verificar que el bloque de las 08:30 y las 09:30 sí están disponibles
-    const hasEightThirtyAm = result.some((slot) => slot.starts_at === `${dateStr}T08:30:00.000Z`);
     const hasNineThirtyAm = result.some((slot) => slot.starts_at === `${dateStr}T09:30:00.000Z`);
+    expect(hasNineAm).toBe(false);
+    expect(hasNineThirtyAm).toBe(false);
+    // Verificar que el bloque de las 08:30 y las 10:00 sí están disponibles
+    const hasEightThirtyAm = result.some((slot) => slot.starts_at === `${dateStr}T08:30:00.000Z`);
+    const hasTenAm = result.some((slot) => slot.starts_at === `${dateStr}T10:00:00.000Z`);
     expect(hasEightThirtyAm).toBe(true);
-    expect(hasNineThirtyAm).toBe(true);
+    expect(hasTenAm).toBe(true);
   });
 
   it('should exclude all blocks occupied by a longer appointment (e.g. 60 minutes)', () => {
@@ -51,6 +54,7 @@ describe('getAvailableSlots availability calculator', () => {
         starts_at: `${dateStr}T10:00:00.000Z`,
         duration_minutes: 60, // Abarca las 10:00 y las 10:30
         status: 'confirmada',
+        appointment_type: 'control' as const,
       },
     ];
 
@@ -58,17 +62,19 @@ describe('getAvailableSlots availability calculator', () => {
     const result = getAvailableSlots(dentistId, dateStr, existing);
 
     // Assert
-    expect(result.length).toBe(totalExpectedSlots - 2);
-    // Verificar exclusión de 10:00 y 10:30
+    expect(result.length).toBe(totalExpectedSlots - 3);
+    // Verificar exclusión de 10:00, 10:30 y 11:00 (por el buffer de 10 minutos)
     const hasTenAm = result.some((slot) => slot.starts_at === `${dateStr}T10:00:00.000Z`);
     const hasTenThirtyAm = result.some((slot) => slot.starts_at === `${dateStr}T10:30:00.000Z`);
+    const hasElevenAm = result.some((slot) => slot.starts_at === `${dateStr}T11:00:00.000Z`);
     expect(hasTenAm).toBe(false);
     expect(hasTenThirtyAm).toBe(false);
-    // El bloque anterior (09:30) y posterior (11:00) deben estar disponibles
+    expect(hasElevenAm).toBe(false);
+    // El bloque anterior (09:30) y posterior (11:30) deben estar disponibles
     const hasNineThirtyAm = result.some((slot) => slot.starts_at === `${dateStr}T09:30:00.000Z`);
-    const hasElevenAm = result.some((slot) => slot.starts_at === `${dateStr}T11:00:00.000Z`);
+    const hasElevenThirtyAm = result.some((slot) => slot.starts_at === `${dateStr}T11:30:00.000Z`);
     expect(hasNineThirtyAm).toBe(true);
-    expect(hasElevenAm).toBe(true);
+    expect(hasElevenThirtyAm).toBe(true);
   });
 
   it('should ignore cancelled or non-attended appointments and keep their slots available', () => {
