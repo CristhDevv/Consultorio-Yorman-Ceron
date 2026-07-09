@@ -79,7 +79,7 @@ export type Database = {
           notes: string | null
           patient_id: string
           status: string
-          tooth_face: string
+          tooth_face: string | null
           tooth_number: number
         }
         Insert: {
@@ -89,7 +89,7 @@ export type Database = {
           notes?: string | null
           patient_id: string
           status: string
-          tooth_face: string
+          tooth_face?: string | null
           tooth_number: number
         }
         Update: {
@@ -99,7 +99,7 @@ export type Database = {
           notes?: string | null
           patient_id?: string
           status?: string
-          tooth_face?: string
+          tooth_face?: string | null
           tooth_number?: number
         }
         Relationships: [
