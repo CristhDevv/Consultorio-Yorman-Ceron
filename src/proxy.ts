@@ -37,7 +37,8 @@ export default async function proxy(request: NextRequest) {
 
   const isProtectedRoute =
     request.nextUrl.pathname.startsWith("/patients") ||
-    request.nextUrl.pathname.startsWith("/portal")
+    request.nextUrl.pathname.startsWith("/portal") ||
+    request.nextUrl.pathname.startsWith("/appointments")
 
   // Si no hay usuario y está en una ruta protegida
   if (!user && isProtectedRoute) {
