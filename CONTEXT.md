@@ -1,6 +1,6 @@
 Contexto Completo del Proyecto Consultorio Odontológico Yorman Cerón
 Stack Tecnológico
-Framework: Next.js 16.2.10 (App Router, Turbopack) Lenguaje: TypeScript Estilos: Tailwind CSS v4 + shadcn/ui Backend / DB: Supabase (PostgreSQL, Auth, Storage) Cliente Supabase: @supabase/ssr — cliente browser y server separados Middleware: src/proxy.ts (nombre requerido por Next.js 16, no middleware.ts) ORM: Ninguno — llamadas directas con el cliente tipado de Supabase Testing: Vitest + Testing Library + jsdom, convención estricta de carpeta tests forzada vía include en vitest.config.ts CI: GitHub Actions (.github/workflows/ci.yml), ejecuta lint, test y build en cada push y pull request Node: >= 22, fijado vía .nvmrc y engines en package.json Breaking changes de Next.js 16: middleware se llama proxy.ts con función exportada proxy; params dinámicos son Promise y deben resolverse con await params; grupos de rutas (nombre) no generan segmento de URL.
+Framework: Next.js 16.2.10 (App Router, Turbopack) Lenguaje: TypeScript Estilos: Tailwind CSS v4 + shadcn/ui Backend / DB: Supabase (PostgreSQL, Auth, Storage) Cliente Supabase: @supabase/ssr — cliente browser y server separados Middleware: src/proxy.ts (nombre requerido por Next.js 16, no middleware.ts) ORM: Ninguno — llamadas directas con el cliente tipado de Supabase Testing: Vitest + Testing Library + jsdom, convención estricta de carpeta __tests__ forzada vía include en vitest.config.ts CI: GitHub Actions (.github/workflows/ci.yml), ejecuta lint, test y build en cada push y pull request Node: >= 22, fijado vía .nvmrc y engines en package.json Breaking changes de Next.js 16: middleware se llama proxy.ts con función exportada proxy; params dinámicos son Promise y deben resolverse con await params; grupos de rutas (nombre) no generan segmento de URL.
 Decisiones de Producto Vigentes
 No existe portal funcional para pacientes. El sistema es de uso exclusivo administrativo (odontólogo/administrador). La ruta /portal se mantiene únicamente como pantalla de "Acceso restringido" que informa al usuario con rol paciente que el sistema no está disponible para su rol, y le permite cerrar sesión. No hay ningún plan de construir funcionalidad de paciente sobre esa ruta.
 Horario laboral de citas: sin restricción de día ni hora. Se puede agendar cualquier día de la semana (incluido domingo) a cualquier hora. BUSINESS_START_HOUR y BUSINESS_END_HOUR en config.ts quedan en 0 y 24 respectivamente por compatibilidad con las fórmulas existentes en availability.ts y su test; ya no representan una restricción real de negocio.
@@ -44,10 +44,10 @@ src/app/(dashboard)/patients/ (page, new, [id] — incluye odontograma y documen
 src/app/(dashboard)/appointments/ (page, new, [id], [id]/edit)
 src/app/portal/page.tsx — pantalla de acceso restringido, no portal funcional
 src/app/api/auth/logout/route.ts
-src/domains/patients/ (actions.ts, components: PatientForm, PatientTable, PatientDetailCard, tests/actions.test.ts)
+src/domains/patients/ (actions.ts, components: PatientForm, PatientTable, PatientDetailCard, __tests__/actions.test.ts)
 src/domains/patients/documents/ (actions.ts — uploadPatientDocument, getPatientDocuments, getDocumentSignedUrl; components/PatientDocuments.tsx)
-src/domains/appointments/ (actions.ts, config.ts, availability.ts, components: AppointmentsTable, AppointmentForm, AppointmentEditForm, AppointmentStatusControl, tests: actions.test.ts, availability.test.ts, AppointmentForm.test.tsx)
-src/domains/clinical/odontogram/ (actions.ts, components/OdontogramChart.tsx, tests: actions.test.ts, OdontogramChart.test.tsx)
+src/domains/appointments/ (actions.ts, config.ts, availability.ts, components: AppointmentsTable, AppointmentForm, AppointmentEditForm, AppointmentStatusControl, __tests__: actions.test.ts, availability.test.ts, AppointmentForm.test.tsx)
+src/domains/clinical/odontogram/ (actions.ts, components/OdontogramChart.tsx, __tests__: actions.test.ts, OdontogramChart.test.tsx)
 src/domains/communications, finance, imaging, inventory, reports — vacíos, pendientes
 src/shared/components/ui/ — shadcn/ui
 src/shared/lib/supabase/client.ts, server.ts
@@ -74,7 +74,7 @@ Error 23505 (unique_violation) interceptado con mensaje amigable (cédula duplic
 Error 23P01 (exclusion_violation) interceptado con mensaje amigable (solapamiento de horario en appointments), tratado por código, nunca por texto del mensaje.
 created_by / uploaded_by siempre asignado server-side desde auth.getUser(), nunca desde el payload del formulario.
 revalidatePath invocado en el servidor tras mutaciones, nunca duplicado en el cliente.
-Convención de testing: archivos de prueba únicamente dentro de carpetas tests, forzado estructuralmente por Vitest.
+Convención de testing: archivos de prueba únicamente dentro de carpetas __tests__, forzado estructuralmente por Vitest.
 Disponibilidad de horarios centralizada en config.ts y availability.ts, con duración real por tipo de cita y buffer post-cita según el tipo de la cita existente, no de la candidata.
 Subida de documentos: file_path generado server-side con patrón {patient_id}/{uuid}-{nombre-sanitizado}; nombre original preservado solo en file_name para mostrar al usuario; rollback automático del archivo en Storage si el insert en base de datos falla después de la subida; descarga exclusivamente vía URL firmada de 60 segundos, nunca URL pública.
 Estado de Módulos
