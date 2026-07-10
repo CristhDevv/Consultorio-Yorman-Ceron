@@ -77,10 +77,25 @@ describe('deletePatientDocument', () => {
     const mockEqDelete = vi.fn().mockResolvedValue({ error: null });
     const mockDelete   = vi.fn().mockReturnValue({ eq: mockEqDelete });
 
-    // mockSupabase.from es llamado dos veces con "patient_documents"
-    mockSupabase.from
-      .mockReturnValueOnce({ select: mockSelect })  // primera llamada: fetch fila
-      .mockReturnValueOnce({ delete: mockDelete }); // segunda llamada: delete fila
+    // Mockear por tabla
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
+            })
+          })
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return {
+          select: mockSelect,
+          delete: mockDelete,
+        };
+      }
+      return {};
+    });
 
     // Storage remove exitoso
     mockStorageBucket.remove.mockResolvedValue({ error: null });
@@ -91,8 +106,10 @@ describe('deletePatientDocument', () => {
     // Assert
     expect(result).toEqual({ success: true, data: null });
 
-    // Verificar que se buscó la fila correctamente
-    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'patient_documents');
+    // Verificar llamadas a base de datos
+    expect(mockSupabase.from).toHaveBeenCalledTimes(3);
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
     expect(mockSelect).toHaveBeenCalledWith('id, file_path');
     expect(mockEqFetch).toHaveBeenCalledWith('id', DOCUMENT_ID);
 
@@ -101,7 +118,7 @@ describe('deletePatientDocument', () => {
     expect(mockStorageBucket.remove).toHaveBeenCalledWith([FILE_PATH]);
 
     // Verificar que se eliminó la fila de BD
-    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(3, 'patient_documents');
     expect(mockDelete).toHaveBeenCalled();
     expect(mockEqDelete).toHaveBeenCalledWith('id', DOCUMENT_ID);
 
@@ -120,7 +137,22 @@ describe('deletePatientDocument', () => {
     });
     const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
     const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
-    mockSupabase.from.mockReturnValue({ select: mockSelect });
+    
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
+            })
+          })
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return { select: mockSelect };
+      }
+      return {};
+    });
 
     // Act
     const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
@@ -134,8 +166,10 @@ describe('deletePatientDocument', () => {
     // Storage.remove no debe haber sido invocado
     expect(mockStorageBucket.remove).not.toHaveBeenCalled();
 
-    // Solo UNA llamada a .from() (la del fetch); nunca se llama al delete
-    expect(mockSupabase.from).toHaveBeenCalledTimes(1);
+    // Dos llamadas a .from() (profiles y fetch)
+    expect(mockSupabase.from).toHaveBeenCalledTimes(2);
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
 
     // revalidatePath no debe haber sido invocado
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -146,7 +180,22 @@ describe('deletePatientDocument', () => {
     const mockSingle  = vi.fn().mockResolvedValue({ data: null, error: null });
     const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
     const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
-    mockSupabase.from.mockReturnValue({ select: mockSelect });
+    
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
+            })
+          })
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return { select: mockSelect };
+      }
+      return {};
+    });
 
     // Act
     const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
@@ -157,7 +206,9 @@ describe('deletePatientDocument', () => {
       error: 'El documento no existe o no tienes permiso para eliminarlo.',
     });
     expect(mockStorageBucket.remove).not.toHaveBeenCalled();
-    expect(mockSupabase.from).toHaveBeenCalledTimes(1);
+    expect(mockSupabase.from).toHaveBeenCalledTimes(2);
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
@@ -169,7 +220,22 @@ describe('deletePatientDocument', () => {
     const mockSingle  = vi.fn().mockResolvedValue({ data: DOC_ROW, error: null });
     const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
     const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
-    mockSupabase.from.mockReturnValue({ select: mockSelect });
+    
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
+            })
+          })
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return { select: mockSelect };
+      }
+      return {};
+    });
 
     // Storage.remove falla
     mockStorageBucket.remove.mockResolvedValue({
@@ -188,8 +254,10 @@ describe('deletePatientDocument', () => {
     // Storage.remove sí fue llamado
     expect(mockStorageBucket.remove).toHaveBeenCalledWith([FILE_PATH]);
 
-    // Solo UNA llamada a .from() (la del fetch); el delete nunca se intenta
-    expect(mockSupabase.from).toHaveBeenCalledTimes(1);
+    // Dos llamadas a .from() (profiles y fetch)
+    expect(mockSupabase.from).toHaveBeenCalledTimes(2);
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
 
     // revalidatePath no debe haber sido invocado
     expect(revalidatePath).not.toHaveBeenCalled();
@@ -210,9 +278,24 @@ describe('deletePatientDocument', () => {
     });
     const mockDelete = vi.fn().mockReturnValue({ eq: mockEqDelete });
 
-    mockSupabase.from
-      .mockReturnValueOnce({ select: mockSelect }) // fetch fila
-      .mockReturnValueOnce({ delete: mockDelete }); // delete fila
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
+            })
+          })
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return {
+          select: mockSelect,
+          delete: mockDelete,
+        };
+      }
+      return {};
+    });
 
     // Storage.remove exitoso
     mockStorageBucket.remove.mockResolvedValue({ error: null });
@@ -229,12 +312,48 @@ describe('deletePatientDocument', () => {
     // Verificar que Storage.remove SÍ fue llamado (ya borró el archivo)
     expect(mockStorageBucket.remove).toHaveBeenCalledWith([FILE_PATH]);
 
-    // Verificar que se intentó el delete de BD (dos llamadas a .from())
-    expect(mockSupabase.from).toHaveBeenCalledTimes(2);
+    // Verificar que se intentó el delete de BD (tres llamadas a .from())
+    expect(mockSupabase.from).toHaveBeenCalledTimes(3);
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
+    expect(mockSupabase.from).toHaveBeenNthCalledWith(3, 'patient_documents');
     expect(mockDelete).toHaveBeenCalled();
     expect(mockEqDelete).toHaveBeenCalledWith('id', DOCUMENT_ID);
 
     // revalidatePath NO debe haberse invocado porque la operación falló
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // 5. Permisos de rol de administrador (Acceso denegado)
+  // ---------------------------------------------------------------------------
+  it('5. rol no administrador: devuelve error de acceso denegado y no realiza ninguna acción', async () => {
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'odontologo' }, error: null })
+            })
+          })
+        };
+      }
+      return {};
+    });
+
+    // Act
+    const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
+
+    // Assert
+    expect(result).toEqual({
+      success: false,
+      error: 'Acceso denegado. Solo los administradores pueden eliminar documentos.',
+    });
+
+    // No debe haber intentado buscar ni borrar de patient_documents (solo profiles)
+    expect(mockSupabase.from).toHaveBeenCalledTimes(1);
+    expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
+    expect(mockStorageBucket.remove).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

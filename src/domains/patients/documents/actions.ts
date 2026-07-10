@@ -245,6 +245,20 @@ export async function deletePatientDocument(
     return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
   }
 
+  // — Validar rol de administrador en tiempo real ──────────────────────────
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || profile?.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden eliminar documentos.",
+    }
+  }
+
   // — Obtener la fila real para recuperar file_path desde la BD ─────────────
   // Nunca se confía en un path recibido del cliente.
   const { data: docRow, error: fetchError } = await supabase

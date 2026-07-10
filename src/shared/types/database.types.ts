@@ -71,6 +71,77 @@ export type Database = {
           },
         ]
       }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          product_id: string
+          quantity: number
+          reason: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          product_id: string
+          quantity: number
+          reason?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_products: {
+        Row: {
+          created_at: string
+          created_by: string
+          current_stock: number
+          id: string
+          min_stock: number
+          name: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          current_stock?: number
+          id?: string
+          min_stock?: number
+          name: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_stock?: number
+          id?: string
+          min_stock?: number
+          name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       odontogram_records: {
         Row: {
           created_at: string
@@ -245,6 +316,16 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_odontologo: { Args: never; Returns: boolean }
+      register_inventory_movement: {
+        Args: {
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

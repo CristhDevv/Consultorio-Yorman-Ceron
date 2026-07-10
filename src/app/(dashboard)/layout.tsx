@@ -57,7 +57,14 @@ export default async function DashboardLayout({
               >
                 Citas
               </Link>
-              <span className="text-sm text-slate-500 cursor-not-allowed">Inventario</span>
+              {profile?.role === "administrador" && (
+                <Link
+                  href="/inventory"
+                  className="text-sm font-semibold text-slate-300 hover:text-cyan-400 transition-colors"
+                >
+                  Inventario
+                </Link>
+              )}
             </nav>
           </div>
           
