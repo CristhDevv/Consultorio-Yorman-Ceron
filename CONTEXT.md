@@ -23,6 +23,8 @@ public.patient_documents: id (uuid PK), patient_id (FK patients.id), document_ty
 public.appointments: id (uuid PK), patient_id (FK patients.id), dentist_id (uuid, doble FK hacia auth.users.id y public.profiles.id — coexistencia intencional para permitir joins nativos de PostgREST hacia profiles), starts_at (timestamptz NOT NULL), duration_minutes (integer NOT NULL, default 30), status (text NOT NULL, default programada; check constraint: programada/confirmada/completada/cancelada/no_asistio), reason (text, nullable), notes (text, nullable), created_by (FK auth.users.id), created_at, updated_at.
 Restricción de exclusión appointments_no_overlap: EXCLUDE USING gist sobre btree_gist, previniendo dos citas del mismo dentist_id cuyo rango se solape (función IMMUTABLE public.appointment_range(starts_at, duration_minutes)). Excluye citas canceladas o no_asistio.
 Lógica de disponibilidad (availability.ts) extendida: la duración real del slot generado y evaluado ya no es un valor fijo, se calcula con getAppointmentDuration(type, manualOverride); el bloqueo contra cada cita existente activa se extiende hasta su fin más su propio buffer (getBufferTimeForType del tipo de esa cita existente, no del tipo de la cita candidata), sin extender el bloqueo hacia atrás.
+public.inventory_products: id (uuid PK), name, unit, min_stock (>= 0), current_stock (>= 0), created_by (FK auth.users.id), created_at, updated_at.
+public.inventory_movements: id (uuid PK), product_id (FK inventory_products.id), type ('entrada' / 'salida'), quantity (> 0), reason, created_by (FK auth.users.id), created_at.
 Storage — Supabase Storage
 Bucket patient-attachments: privado (public: false), file_size_limit 5242880 bytes (5 MB), allowed_mime_types null por diseño (la restricción de tipo de archivo es un blocklist de ejecutables aplicado en la Server Action, no un allowlist a nivel de bucket). Creado y configurado vía migraciones 20260709233700_create_storage_patient_attachments.sql and 20260709233800_set_patient_attachments_size_limit.sql.
 Políticas RLS de storage.objects sobre este bucket: SELECT e INSERT restringidas a authenticated con (is_admin() OR is_odontologo()).
@@ -33,22 +35,27 @@ RLS patients: SELECT/UPDATE → is_admin() OR is_odontologo(); INSERT → is_adm
 RLS odontogram_records: mismas reglas que patients, con WITH CHECK adicional validando created_by = auth.uid().
 RLS patient_documents (verificada contra producción y documentada retroactivamente): read_documents (SELECT, USING is_admin() OR is_odontologo()), insert_documents (INSERT, WITH CHECK (is_admin() OR is_odontologo()) AND uploaded_by = auth.uid()), update_documents (UPDATE, USING is_admin() OR is_odontologo()), delete_documents (DELETE, USING is_admin()).
 RLS appointments: appointments_select (SELECT, USING is_admin() OR is_odontologo()), appointments_insert (INSERT, WITH CHECK (is_admin() OR is_odontologo()) AND created_by = auth.uid()), appointments_update (UPDATE, USING is_admin() OR is_odontologo()), appointments_delete (DELETE, USING is_admin()).
+RLS inventory_products: SELECT → is_admin() OR is_odontologo(); INSERT/UPDATE/DELETE (alta/edición de catálogo) → solo is_admin().
+RLS inventory_movements: SELECT → is_admin() OR is_odontologo(); INSERT → solo is_admin() con WITH CHECK created_by = auth.uid(). UPDATE y DELETE no permitidos (append-only).
+Función SECURITY DEFINER: public.register_inventory_movement(p_product_id, p_type, p_quantity, p_reason, p_user_id) con control interno de acceso (is_admin()) y restricciones de ejecución REVOKE de PUBLIC y GRANT a authenticated.
 Corregido, 2026-07-09: /appointments no estaba en isProtectedRoute de src/proxy.ts, lo que permitía acceso sin sesión activa. Corregido agregando la ruta a isProtectedRoute, con test de cobertura actualizado.
 Estructura de Archivos
 src/proxy.ts — Middleware de auth
 src/app/layout.tsx, page.tsx, globals.css
 src/app/(auth)/login, register
-src/app/(dashboard)/layout.tsx (navbar + verificación de rol server-side)
+src/app/(dashboard)/layout.tsx (navbar con enlace a /inventory condicionado a administrador + verificación de rol server-side)
 src/app/(dashboard)/page.tsx
 src/app/(dashboard)/patients/ (page, new, [id] — incluye odontograma y documentos integrados, [id]/edit)
 src/app/(dashboard)/appointments/ (page, new, [id], [id]/edit)
 src/app/portal/page.tsx — pantalla de acceso restringido, no portal funcional
 src/app/api/auth/logout/route.ts
 src/domains/patients/ (actions.ts, components: PatientForm, PatientTable, PatientDetailCard, __tests__/actions.test.ts)
-src/domains/patients/documents/ (actions.ts — uploadPatientDocument, getPatientDocuments, getDocumentSignedUrl; components/PatientDocuments.tsx)
+src/domains/patients/documents/ (actions.ts — uploadPatientDocument, getPatientDocuments, getDocumentSignedUrl, deletePatientDocument; components/PatientDocuments.tsx)
 src/domains/appointments/ (actions.ts, config.ts, availability.ts, components: AppointmentsTable, AppointmentForm, AppointmentEditForm, AppointmentStatusControl, __tests__: actions.test.ts, availability.test.ts, AppointmentForm.test.tsx)
 src/domains/clinical/odontogram/ (actions.ts, components/OdontogramChart.tsx, __tests__: actions.test.ts, OdontogramChart.test.tsx)
-src/domains/communications, finance, imaging, inventory, reports — vacíos, pendientes
+src/domains/inventory/ (actions.ts — getInventoryProducts; __tests__/page.test.tsx vía src/app/(dashboard)/inventory/__tests__/)
+src/app/(dashboard)/inventory/ (page.tsx — catálogo de productos, solo administrador)
+src/domains/communications, finance, imaging, reports — vacíos, pendientes
 src/shared/components/ui/ — shadcn/ui
 src/shared/lib/supabase/client.ts, server.ts
 src/shared/lib/utils.ts
@@ -60,13 +67,14 @@ Rutas URL Actuales
 / (autenticado staff), /login, /register (público)
 /patients, /patients/new, /patients/[id] (incluye odontograma y documentos), /patients/[id]/edit (odontologo/administrador)
 /appointments, /appointments/new, /appointments/[id], /appointments/[id]/edit (odontologo/administrador)
+/inventory (catálogo de inventario, solo administrador)
 /portal (acceso restringido para rol paciente, sin funcionalidad clínica)
 /api/auth/logout (POST)
 Reglas de protección (proxy.ts): sin sesión + ruta protegida → redirige a /login; con sesión + /login o /register → redirige a /. El layout de (dashboard) verifica rol server-side: si role === 'paciente' → redirige a /portal.
 Sistema de Roles
 paciente: solo /portal (pantalla de acceso restringido, sin funcionalidad).
 odontologo: dashboard completo, CRUD de pacientes y citas, gestión de odontograma y documentos.
-administrador: dashboard completo, CRUD + DELETE, lectura de todos los perfiles.
+administrador: dashboard completo, CRUD + DELETE, lectura de todos los perfiles, acceso exclusivo a /inventory (catálogo y movimientos de inventario).
 Rol siempre leído desde profiles en tiempo real, nunca desde JWT.
 Patrones Establecidos
 Server Actions para toda escritura, nunca API REST. SSR puro sin useEffect + fetch client-side. Buscador local reactivo sin re-fetch.
@@ -77,25 +85,25 @@ revalidatePath invocado en el servidor tras mutaciones, nunca duplicado en el cl
 Convención de testing: archivos de prueba únicamente dentro de carpetas __tests__, forzado estructuralmente por Vitest.
 Disponibilidad de horarios centralizada en config.ts y availability.ts, con duración real por tipo de cita y buffer post-cita según el tipo de la cita existente, no de la candidata.
 Subida de documentos: file_path generado server-side con patrón {patient_id}/{uuid}-{nombre-sanitizado}; nombre original preservado solo en file_name para mostrar al usuario; rollback automático del archivo en Storage si el insert en base de datos falla después de la subida; descarga exclusivamente vía URL firmada de 60 segundos, nunca URL pública.
+Control de esquema de base de datos: toda modificación de esquema de base de datos debe realizarse exclusivamente mediante archivos de migración versionados en supabase/migrations, y está prohibido aplicar cambios de esquema directamente desde la consola SQL de Supabase o cualquier cliente directo.
 Estado de Módulos
 Autenticación (login/registro/roles): Completo y seguro.
 CRUD de Pacientes (ficha básica): Completo — build y lint OK.
 Citas y Agenda: Completo. Horario abierto (cualquier día/hora), catálogo de tipos de cita con duración y override manual, buffer de 10 min salvo urgencia, restricción de exclusión anti-solapamiento vía btree_gist, RLS completa con 4 políticas, 22 pruebas automatizadas.
 Odontograma Visual: Completo. Componente OdontogramChart.tsx integrado con Server Actions (getOdontogramByPatient, createOdontogramRecord) en la página de detalle del paciente, guardado automático por interacción, sin reversión visual necesaria ante error porque el estado se deriva del prop records sin mutación optimista. Índice único de exclusión mutua ausente/extracción. 4 tests de componente añadidos (14 tests totales del dominio).
-Documentos del Paciente (Storage): Completo en su alcance actual. Bucket patient-attachments privado con límite de 5 MB y RLS, Server Actions con blocklist de ejecutables/scripts (extensión + mimetype), UI de listado y subida integrada en la ficha del paciente. Pendiente explícito: Server Action y UI de eliminación (botón visible solo para administrador, deshabilitado con "Próximamente").
-Inventario: Pendiente.
+Documentos del Paciente (Storage): Completo. Bucket patient-attachments privado con límite de 5 MB y RLS. Server Actions con blocklist de ejecutables/scripts (extensión + mimetype), y Server Action deletePatientDocument implementada con validación de rol administrador en tiempo real. UI de listado y subida integrada en la ficha del paciente; botón de eliminación en UI deshabilitado temporalmente con "Próximamente".
+Inventario: Completo. Ruta /inventory con catálogo de lectura (Server Component) y formulario de registro de movimientos de stock (client component). La Server Action registerInventoryMovement valida el rol de administrador en tiempo real contra public.profiles, invoca exclusivamente la función RPC register_inventory_movement y maneja errores de stock insuficiente extrayendo el stock disponible con regex (/Stock insuficiente.*Disponible:\s*(\d+)/i) con fallback seguro si no coincide. El formulario permanece en la misma pantalla tras éxito limpiando campos y mostrando una confirmación del movimiento. Incluye 8 pruebas en total (2 de catálogo y 6 de Server Action) integradas al conteo total del proyecto. Base de datos: inventory_products, inventory_movements, RLS completa y función register_inventory_movement.
 Finanzas: Pendiente.
 Reportes: Pendiente.
 Portal del Paciente: Descartado como funcionalidad de producto. /portal es únicamente pantalla de acceso restringido.
 Validaciones de Build
 npm run build → EXIT_CODE: 0
 npm run lint → 0 errores, 0 advertencias
-npm run test → Vitest, 43 pruebas pasando en 8 archivos (environment, patients/actions, appointments/actions, appointments/availability, appointments/AppointmentForm, odontogram/actions, odontogram/OdontogramChart, proxy/middleware)
+npm run test → Vitest, 57 pruebas pasando en 11 archivos (environment, patients/actions, patients/documents/actions, appointments/actions, appointments/availability, appointments/AppointmentForm, odontogram/actions, odontogram/OdontogramChart, proxy/middleware, inventory/page, inventory/actions)
 TypeScript → sin errores de tipos en todo el proyecto (incluye tipado corregido de mocks Supabase en appointments, patients y odontogram vía Awaited<ReturnType<typeof createClient>>)
 CI (.github/workflows/ci.yml) → ejecuta en orden npm ci, npm run lint, npm run test, npm run build en cada push y pull request sobre Ubuntu con Node 22
 Node local de desarrollo: v24.18.0, cumple engines >= 22
 Control de Versiones
 Historial local completo, organizado en commits lógicos por área. Sin repositorio remoto (git remote) configurado todavía.
 Pendientes Registrados — No Urgentes
-Server Action y UI de eliminación de documentos (RLS ya lo restringe a administrador, falta implementación de código).
-Módulos de Inventario, Finanzas y Reportes, sin iniciar.
+Módulos de Finanzas y Reportes, sin iniciar.
