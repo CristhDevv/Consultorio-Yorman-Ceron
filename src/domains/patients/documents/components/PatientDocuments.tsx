@@ -26,6 +26,7 @@ interface PatientDocumentsProps {
   canDelete: boolean
   onUpload: (formData: FormData) => Promise<ActionResult<{ id: string; file_path: string }>>
   onGetSignedUrl: (filePath: string) => Promise<ActionResult<{ signedUrl: string }>>
+  onDelete: (documentId: string) => Promise<ActionResult<null>>
 }
 
 // ─── Utilidad: formatear fecha legible ──────────────────────────────────────
@@ -52,6 +53,7 @@ export default function PatientDocuments({
   canDelete,
   onUpload,
   onGetSignedUrl,
+  onDelete,
 }: PatientDocumentsProps) {
   // — Estado del formulario de subida ─────────────────────────────────────
   const [documentType, setDocumentType] = useState("")
@@ -66,6 +68,10 @@ export default function PatientDocuments({
   // — Estado de "Ver" por documento ────────────────────────────────────────
   const [viewErrors, setViewErrors] = useState<Record<string, string>>({})
   const [viewLoading, setViewLoading] = useState<Record<string, boolean>>({})
+
+  // — Estado de "Eliminar" por documento ───────────────────────────────────
+  const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({})
+  const [deleteLoading, setDeleteLoading] = useState<Record<string, boolean>>({})
 
   // — Manejador: subir documento ────────────────────────────────────────────
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
@@ -117,6 +123,25 @@ export default function PatientDocuments({
     }
   }
 
+  // — Manejador: eliminar documento ─────────────────────────────────────────
+  async function handleDelete(docId: string) {
+    const confirmed = window.confirm(
+      "¿Está seguro de que desea eliminar este documento? Esta acción no se puede deshacer."
+    )
+    if (!confirmed) return
+
+    setDeleteLoading((prev) => ({ ...prev, [docId]: true }))
+    setDeleteErrors((prev) => ({ ...prev, [docId]: "" }))
+
+    const result = await onDelete(docId)
+
+    setDeleteLoading((prev) => ({ ...prev, [docId]: false }))
+
+    if (!result.success) {
+      setDeleteErrors((prev) => ({ ...prev, [docId]: result.error }))
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* ── Lista de documentos ──────────────────────────────────────────── */}
@@ -136,7 +161,7 @@ export default function PatientDocuments({
             <ul className="flex flex-col gap-3">
               {initialDocuments.map((doc) => (
                 <li
-                  key={doc.id}
+                   key={doc.id}
                   className="bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                 >
                   {/* Información del documento */}
@@ -154,6 +179,12 @@ export default function PatientDocuments({
                     {viewErrors[doc.id] && (
                       <span className="text-xs text-red-400 mt-1">
                         {viewErrors[doc.id]}
+                      </span>
+                    )}
+                    {/* Error inline de "Eliminar" */}
+                    {deleteErrors[doc.id] && (
+                      <span className="text-xs text-red-400 mt-1">
+                        {deleteErrors[doc.id]}
                       </span>
                     )}
                   </div>
@@ -174,11 +205,11 @@ export default function PatientDocuments({
                       <Button
                         id={`btn-eliminar-doc-${doc.id}`}
                         variant="outline"
-                        className="border-slate-800 text-slate-600 text-xs h-8 px-3 cursor-not-allowed"
-                        disabled
-                        title="Función no disponible aún"
+                        className="border-red-900/50 text-red-400 hover:bg-red-950 hover:text-red-300 hover:border-red-500/30 text-xs h-8 px-3 transition-all"
+                        disabled={!!deleteLoading[doc.id]}
+                        onClick={() => handleDelete(doc.id)}
                       >
-                        Próximamente
+                        {deleteLoading[doc.id] ? "Eliminando…" : "Eliminar"}
                       </Button>
                     )}
                   </div>

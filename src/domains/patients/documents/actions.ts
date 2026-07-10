@@ -225,3 +225,73 @@ export async function getDocumentSignedUrl(
 
   return { success: true, data: { signedUrl: data.signedUrl } }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4. deletePatientDocument
+// ═══════════════════════════════════════════════════════════════════════════
+export async function deletePatientDocument(
+  documentId: string,
+  patientId: string
+): Promise<ActionResult<null>> {
+  const supabase = await createClient()
+
+  // — Validar sesión ────────────────────────────────────────────────────────
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // — Obtener la fila real para recuperar file_path desde la BD ─────────────
+  // Nunca se confía en un path recibido del cliente.
+  const { data: docRow, error: fetchError } = await supabase
+    .from("patient_documents")
+    .select("id, file_path")
+    .eq("id", documentId)
+    .single()
+
+  if (fetchError || !docRow) {
+    return {
+      success: false,
+      error: "El documento no existe o no tienes permiso para eliminarlo.",
+    }
+  }
+
+  const filePath = docRow.file_path
+
+  // — Eliminar el archivo físico de Storage primero ─────────────────────────
+  // Si esto falla, no se toca la fila de base de datos para evitar
+  // que la BD diga que no existe un archivo que sigue en Storage.
+  const { error: storageError } = await supabase.storage
+    .from(BUCKET)
+    .remove([filePath])
+
+  if (storageError) {
+    return {
+      success: false,
+      error: `No se pudo eliminar el archivo de almacenamiento: ${storageError.message}. La fila de base de datos no fue modificada.`,
+    }
+  }
+
+  // — Eliminar la fila de patient_documents ─────────────────────────────────
+  // El archivo físico ya fue borrado. Si este paso falla, se reporta
+  // explícitamente como inconsistencia visible, nunca silenciosa.
+  const { error: deleteError } = await supabase
+    .from("patient_documents")
+    .delete()
+    .eq("id", documentId)
+
+  if (deleteError) {
+    return {
+      success: false,
+      error: `El archivo fue eliminado de Storage pero la fila de base de datos no pudo borrarse: ${deleteError.message}. Se requiere revisión manual para restaurar la consistencia.`,
+    }
+  }
+
+  revalidatePath(`/patients/${patientId}`)
+
+  return { success: true, data: null }
+}

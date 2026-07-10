@@ -8,6 +8,7 @@ import {
   getPatientDocuments,
   uploadPatientDocument,
   getDocumentSignedUrl,
+  deletePatientDocument,
 } from "@/domains/patients/documents/actions"
 import PatientDocuments from "@/domains/patients/documents/components/PatientDocuments"
 
@@ -63,6 +64,11 @@ export default async function PatientDetailPage({ params }: PageProps) {
     return getDocumentSignedUrl(filePath)
   }
 
+  async function handleDelete(documentId: string) {
+    "use server"
+    return deletePatientDocument(documentId, id)
+  }
+
   // — Server Action wrapper para el odontograma (sin cambios) ───────────────
   async function handleOdontogramSubmit(data: {
     tooth_number: number
@@ -106,6 +112,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
         canDelete={canDelete}
         onUpload={handleUpload}
         onGetSignedUrl={handleGetSignedUrl}
+        onDelete={handleDelete}
       />
     </div>
   )
