@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          amount: number | null
           created_at: string
           created_by: string
           dentist_id: string
@@ -29,6 +30,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount?: number | null
           created_at?: string
           created_by: string
           dentist_id: string
@@ -42,6 +44,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount?: number | null
           created_at?: string
           created_by?: string
           dentist_id?: string
@@ -224,6 +227,64 @@ export type Database = {
           },
         ]
       }
+      patient_payments: {
+        Row: {
+          amount: number
+          appointment_id: string
+          created_at: string
+          created_by: string
+          id: string
+          patient_id: string
+          reason: string | null
+          reversed_payment_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          appointment_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          patient_id: string
+          reason?: string | null
+          reversed_payment_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          patient_id?: string
+          reason?: string | null
+          reversed_payment_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_payments_patient_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_payments_reversed_payment_id_fkey"
+            columns: ["reversed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "patient_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
@@ -325,6 +386,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      register_patient_payment: {
+        Args: {
+          p_amount: number
+          p_appointment_id: string
+          p_patient_id: string
+          p_reason?: string
+          p_reversed_payment_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
       }
     }
     Enums: {
