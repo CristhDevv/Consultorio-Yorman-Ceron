@@ -105,5 +105,7 @@ CI (.github/workflows/ci.yml) → ejecuta en orden npm ci, npm run lint, npm run
 Node local de desarrollo: v24.18.0, cumple engines >= 22
 Control de Versiones
 Historial local completo, organizado en commits lógicos por área. Sin repositorio remoto (git remote) configurado todavía.
+- El commit `2be1d5a` quedó registrado en el historial sin que se pudiera confirmar de forma verificable en esta sesión quién o qué proceso lo ejecutó. Su contenido fue verificado como correcto vía `git show --stat`. Para evitar ambigüedades similares en el futuro, se adopta de ahora en adelante el protocolo explícito de tres pasos (`git status` -> `git commit` -> `git status` como llamadas de herramientas separadas).
+
 Pendientes Registrados — No Urgentes
 Módulos de Finanzas y Reportes, sin iniciar.
