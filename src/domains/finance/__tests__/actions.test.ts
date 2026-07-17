@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { registerPatientPayment } from '../actions';
+import { registerPatientPayment, getPatientPaymentHistory } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -419,3 +419,267 @@ describe('registerPatientPayment', () => {
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });
+
+// ─── Suite: getPatientPaymentHistory ──────────────────────────────────────────
+
+// Constantes compartidas del dominio de historial
+const PATIENT_ID_HIST = 'patient-uuid-hist-001';
+const ADMIN_USER_HIST = { id: 'admin-uuid-hist-001' };
+const ODONT_USER_HIST = { id: 'odont-uuid-hist-001' };
+
+const ROW_PAGO = {
+  id:                  'pay-uuid-001',
+  appointment_id:      'appt-uuid-001',
+  patient_id:          PATIENT_ID_HIST,
+  type:                'pago',
+  amount:              200000,
+  reason:              'Pago inicial consulta',
+  reversed_payment_id: null,
+  created_by:          ADMIN_USER_HIST.id,
+  created_at:          '2026-07-10T09:00:00Z',
+};
+
+const ROW_REVERSO = {
+  id:                  'pay-uuid-002',
+  appointment_id:      'appt-uuid-001',
+  patient_id:          PATIENT_ID_HIST,
+  type:                'reverso',
+  amount:              50000,
+  reason:              'Ajuste por error',
+  reversed_payment_id: 'pay-uuid-001',
+  created_by:          ADMIN_USER_HIST.id,
+  created_at:          '2026-07-11T10:00:00Z',
+};
+
+/**
+ * Configura mockSupabase.from para la suite de historial:
+ *  - 'profiles'         → devuelve { role } o error
+ *  - 'patient_payments' → devuelve rows o error, con cadena .select().eq().order()
+ */
+function setupFromHistory(
+  mockSupabase: MockSupabase,
+  {
+    role         = 'administrador',
+    profileError = null as null | { message: string },
+    rows         = [] as object[],
+    queryError   = null as null | { message: string },
+  } = {}
+) {
+  mockSupabase.from.mockImplementation((tableName: string) => {
+    if (tableName === 'profiles') {
+      return {
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({
+                data:  profileError ? null : { role },
+                error: profileError,
+              }),
+          }),
+        }),
+      };
+    }
+
+    if (tableName === 'patient_payments') {
+      return {
+        select: () => ({
+          eq: () => ({
+            order: () =>
+              Promise.resolve({
+                data:  queryError ? null : rows,
+                error: queryError,
+              }),
+          }),
+        }),
+      };
+    }
+
+    return {};
+  });
+}
+
+describe('getPatientPaymentHistory', () => {
+  let mockSupabase: MockSupabase;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockSupabase = {
+      auth: { getUser: vi.fn() },
+      from: vi.fn(),
+      rpc:  vi.fn(),
+    };
+
+    vi.mocked(createClient).mockResolvedValue(
+      mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>
+    );
+
+    // Por defecto: sesión autenticada como administrador
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data:  { user: ADMIN_USER_HIST },
+      error: null,
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 1. Lectura exitosa para administrador — verifica movimientos y resumen
+  // ───────────────────────────────────────────────────────────────────────────
+  it('1. lectura exitosa para administrador: devuelve movimientos ordenados y resumen (totalPagado, totalReversado, saldoNeto) correctamente calculados', async () => {
+    // Arrange — un pago de 200 000 y un reverso de 50 000
+    setupFromHistory(mockSupabase, {
+      role: 'administrador',
+      rows: [ROW_PAGO, ROW_REVERSO],
+    });
+
+    // Act
+    const result = await getPatientPaymentHistory(PATIENT_ID_HIST);
+
+    // Assert — éxito
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    // Los movimientos se devuelven en el orden en que los retornó la query (ASC)
+    expect(result.data.movements).toHaveLength(2);
+    expect(result.data.movements[0]).toMatchObject({ id: 'pay-uuid-001', type: 'pago' });
+    expect(result.data.movements[1]).toMatchObject({ id: 'pay-uuid-002', type: 'reverso' });
+
+    // Resumen calculado correctamente
+    expect(result.data.summary).toEqual({
+      totalPagado:    200000,
+      totalReversado: 50000,
+      saldoNeto:      150000,
+    });
+
+    // Esta función no llama a revalidatePath nunca
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 2. Lectura exitosa para odontólogo — mismo resultado, rol diferente
+  // ───────────────────────────────────────────────────────────────────────────
+  it('2. lectura exitosa para odontólogo: el rol odontologo también tiene acceso de lectura y obtiene el mismo resumen', async () => {
+    // Arrange — sesión como odontologo
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data:  { user: ODONT_USER_HIST },
+      error: null,
+    });
+    setupFromHistory(mockSupabase, {
+      role: 'odontologo',
+      rows: [ROW_PAGO, ROW_REVERSO],
+    });
+
+    // Act
+    const result = await getPatientPaymentHistory(PATIENT_ID_HIST);
+
+    // Assert
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    expect(result.data.movements).toHaveLength(2);
+    expect(result.data.summary).toEqual({
+      totalPagado:    200000,
+      totalReversado: 50000,
+      saldoNeto:      150000,
+    });
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 3. Rechazo por rol no autorizado (paciente — defensa en profundidad)
+  // ───────────────────────────────────────────────────────────────────────────
+  it('3. rol paciente: devuelve acceso denegado sin consultar patient_payments', async () => {
+    // Arrange — perfil con rol paciente
+    setupFromHistory(mockSupabase, { role: 'paciente' });
+
+    // Act
+    const result = await getPatientPaymentHistory(PATIENT_ID_HIST);
+
+    // Assert
+    expect(result).toEqual({
+      success: false,
+      error:   'Acceso denegado. Solo administradores y odontólogos pueden consultar el historial de pagos.',
+    });
+
+    // Solo debe haber consultado profiles, no patient_payments
+    expect(mockSupabase.from).toHaveBeenCalledOnce();
+    expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 4. Sin sesión activa
+  // ───────────────────────────────────────────────────────────────────────────
+  it('4. sin sesión activa: devuelve error de sesión sin intentar nada más', async () => {
+    // Arrange — sin usuario autenticado
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data:  { user: null },
+      error: null,
+    });
+
+    // Act
+    const result = await getPatientPaymentHistory(PATIENT_ID_HIST);
+
+    // Assert
+    expect(result).toEqual({
+      success: false,
+      error:   'No hay sesión activa. Por favor inicia sesión.',
+    });
+
+    expect(mockSupabase.from).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 5. Historial vacío — paciente sin movimientos registrados
+  // ───────────────────────────────────────────────────────────────────────────
+  it('5. historial vacío: devuelve movements como arreglo vacío y los tres valores del resumen en cero, no un error', async () => {
+    // Arrange — query devuelve arreglo vacío
+    setupFromHistory(mockSupabase, {
+      role: 'administrador',
+      rows: [],
+    });
+
+    // Act
+    const result = await getPatientPaymentHistory(PATIENT_ID_HIST);
+
+    // Assert — éxito con colección vacía
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    expect(result.data.movements).toEqual([]);
+    expect(result.data.summary).toEqual({
+      totalPagado:    0,
+      totalReversado: 0,
+      saldoNeto:      0,
+    });
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 6. Dato corrupto — fila con type fuera de dominio
+  // ───────────────────────────────────────────────────────────────────────────
+  it('6. dato corrupto: fila con type fuera de pago/reverso dispara success false con mensaje de inconsistencia, sin calcular resumen', async () => {
+    // Arrange — una fila válida seguida de una fila con type inválido
+    const ROW_CORRUPTO = { ...ROW_PAGO, id: 'pay-uuid-corrupto', type: 'transferencia' };
+    setupFromHistory(mockSupabase, {
+      role: 'administrador',
+      rows: [ROW_PAGO, ROW_CORRUPTO],
+    });
+
+    // Act
+    const result = await getPatientPaymentHistory(PATIENT_ID_HIST);
+
+    // Assert — la función debe rechazar el historial completo, no calcular un resumen parcial
+    expect(result.success).toBe(false);
+    if (result.success) return;
+
+    expect(result.error).toBe(
+      "Inconsistencia de datos: se encontró un registro de pago con tipo inválido 'transferencia' para el paciente."
+    );
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
