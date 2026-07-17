@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useTransition } from "react"
+import React, { useState, useEffect } from "react"
 import { getPatientPaymentHistory, type PaymentHistory, type PaymentRecord } from "@/domains/finance/actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert"
@@ -13,29 +13,42 @@ interface PaymentHistoryViewProps {
 export default function PaymentHistoryView({ patientId, patientName }: PaymentHistoryViewProps) {
   const [history, setHistory] = useState<PaymentHistory | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!patientId) {
       return
     }
 
-    startTransition(async () => {
-      // Estado de carga explícito: limpiamos el historial anterior antes del fetch
+    let cancelled = false
+
+    // Función async interna para que los setState no queden directamente en el cuerpo del effect
+    async function loadHistory() {
       setHistory(null)
       setErrorMsg(null)
+      setIsLoading(true)
       try {
         const res = await getPatientPaymentHistory(patientId)
+        if (cancelled) return
         if (res.success) {
           setHistory(res.data)
         } else {
           setErrorMsg(res.error)
         }
       } catch (err) {
+        if (cancelled) return
         console.error("Error loading payment history:", err)
         setErrorMsg("Ocurrió un error inesperado al cargar el historial financiero.")
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
-    })
+    }
+
+    loadHistory()
+
+    return () => {
+      cancelled = true
+    }
   }, [patientId])
 
   const formatCurrency = (amount: number) => {
@@ -71,7 +84,7 @@ export default function PaymentHistoryView({ patientId, patientName }: PaymentHi
         </Alert>
       )}
 
-      {isPending ? (
+      {isLoading ? (
         <div className="flex flex-col items-center justify-center p-10 text-slate-400 text-sm border border-slate-800 rounded-xl bg-slate-900/50 min-h-[300px] gap-3">
           <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
           <p>Cargando información financiera de {patientName}...</p>
