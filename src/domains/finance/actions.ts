@@ -176,3 +176,131 @@ export async function registerPatientPayment(
     },
   }
 }
+
+// ---------------------------------------------------------------------------
+// getPatientPaymentHistory
+// ---------------------------------------------------------------------------
+
+export type PaymentRecord = {
+  id: string
+  appointment_id: string
+  patient_id: string
+  type: "pago" | "reverso"
+  amount: number
+  reason: string | null
+  reversed_payment_id: string | null
+  created_by: string
+  created_at: string
+}
+
+export type PaymentHistorySummary = {
+  totalPagado: number
+  totalReversado: number
+  saldoNeto: number
+}
+
+export type PaymentHistory = {
+  movements: PaymentRecord[]
+  summary: PaymentHistorySummary
+}
+
+/**
+ * Returns the full chronological payment history for a given patient.
+ * Accessible to both "administrador" and "odontologo" roles (read-only).
+ * No revalidatePath because this is a pure read — no cache mutation occurs.
+ *
+ * @param patientId - UUID of the patient whose history is requested.
+ */
+export async function getPatientPaymentHistory(
+  patientId: string
+): Promise<ActionResult<PaymentHistory>> {
+  const supabase = await createClient()
+
+  // 1. Session verification
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // 2. Real-time role verification — administrador OR odontologo may read
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  const allowedRoles = ["administrador", "odontologo"] as const
+  if (profileError || !profile || !(allowedRoles as readonly string[]).includes(profile.role)) {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo administradores y odontólogos pueden consultar el historial de pagos.",
+    }
+  }
+
+  // 3. Input guard
+  if (!patientId) {
+    return { success: false, error: "Debe proporcionar el ID del paciente." }
+  }
+
+  // 4. Query all payment records for the patient, oldest-first
+  const { data: movements, error: queryError } = await supabase
+    .from("patient_payments")
+    .select("*")
+    .eq("patient_id", patientId)
+    .order("created_at", { ascending: true })
+
+  if (queryError) {
+    return { success: false, error: queryError.message }
+  }
+
+  const records: PaymentRecord[] = []
+  for (const row of movements ?? []) {
+    if (row.type !== "pago" && row.type !== "reverso") {
+      return {
+        success: false,
+        error: `Inconsistencia de datos: se encontró un registro de pago con tipo inválido '${row.type}' para el paciente.`,
+      }
+    }
+    records.push({
+      id: row.id,
+      appointment_id: row.appointment_id,
+      patient_id: row.patient_id,
+      type: row.type,
+      amount: row.amount,
+      reason: row.reason,
+      reversed_payment_id: row.reversed_payment_id,
+      created_by: row.created_by,
+      created_at: row.created_at,
+    })
+  }
+
+  // 5. Compute summary
+  let totalPagado = 0
+  let totalReversado = 0
+
+  for (const record of records) {
+    if (record.type === "pago") {
+      totalPagado += record.amount
+    } else if (record.type === "reverso") {
+      totalReversado += record.amount
+    }
+  }
+
+  const saldoNeto = totalPagado - totalReversado
+
+  return {
+    success: true,
+    data: {
+      movements: records,
+      summary: {
+        totalPagado,
+        totalReversado,
+        saldoNeto,
+      },
+    },
+  }
+}
