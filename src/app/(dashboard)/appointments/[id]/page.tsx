@@ -1,7 +1,9 @@
 import React from "react"
 import Link from "next/link"
+import { createClient } from "@/shared/lib/supabase/server"
 import { getAppointmentById } from "@/domains/appointments/actions"
 import AppointmentStatusControl from "@/domains/appointments/components/AppointmentStatusControl"
+import PaymentForm from "@/domains/finance/components/PaymentForm"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card"
 
@@ -66,6 +68,23 @@ function formatDateTime(isoString: string): string {
 
 export default async function AppointmentDetailPage({ params }: PageProps) {
   const { id } = await params
+
+  // Consulta de rol en tiempo real — mismo patrón que el layout del dashboard.
+  // No se reutiliza el valor del layout padre; se verifica de forma independiente
+  // para mantener el principio de nunca confiar en un rol cacheado o heredado.
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+    : { data: null }
+  const isAdmin = profile?.role === "administrador"
+
   const appointment = await getAppointmentById(id)
 
   if (!appointment) {
@@ -185,6 +204,14 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
 
         {/* Control Rápido de Estado */}
         <AppointmentStatusControl appointmentId={appointment.id} currentStatus={appointment.status} />
+
+        {/* Registro de Pagos — solo visible para administradores */}
+        {isAdmin && appointment.patients?.id && (
+          <PaymentForm
+            appointmentId={appointment.id}
+            patientId={appointment.patients.id}
+          />
+        )}
       </div>
     </div>
   )
