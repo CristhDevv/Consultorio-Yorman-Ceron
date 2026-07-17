@@ -11,6 +11,7 @@ import {
   deletePatientDocument,
 } from "@/domains/patients/documents/actions"
 import PatientDocuments from "@/domains/patients/documents/components/PatientDocuments"
+import PaymentHistoryView from "@/domains/finance/components/PaymentHistoryView"
 
 export const metadata = {
   title: "Detalle del Paciente - Consultorio Odontológico Yorman Cerón",
@@ -114,6 +115,15 @@ export default async function PatientDetailPage({ params }: PageProps) {
         onGetSignedUrl={handleGetSignedUrl}
         onDelete={handleDelete}
       />
+
+      {/* Historial Financiero Consolidado */}
+      <div className="border-t border-slate-800 pt-6">
+        <h2 className="text-xl font-bold text-white mb-4">Expediente Financiero</h2>
+        <PaymentHistoryView
+          patientId={id}
+          patientName={patient.full_name}
+        />
+      </div>
     </div>
   )
 }
