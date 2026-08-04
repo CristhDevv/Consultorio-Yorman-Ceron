@@ -50,7 +50,7 @@ Función SECURITY DEFINER: public.register_patient_payment(p_appointment_id uuid
 Corregido, 2026-07-09: /appointments no estaba en isProtectedRoute de src/proxy.ts, lo que permitía acceso sin sesión activa. Corregido agregando la ruta a isProtectedRoute, con test de cobertura actualizado.
 Estructura de Archivos
 src/proxy.ts — Middleware de auth
-src/app/layout.tsx, page.tsx, globals.css
+src/app/layout.tsx, globals.css
 src/app/(auth)/login, register
 src/app/(dashboard)/layout.tsx (navbar con enlace a /inventory condicionado a administrador + verificación de rol server-side)
 src/app/(dashboard)/page.tsx
@@ -85,6 +85,7 @@ Rutas URL Actuales
 /portal (acceso restringido para rol paciente, sin funcionalidad clínica)
 /api/auth/logout (POST)
 Reglas de protección (proxy.ts): sin sesión + ruta protegida → redirige a /login; con sesión + /login o /register → redirige a /. El layout de (dashboard) verifica rol server-side: si role === 'paciente' → redirige a /portal.
+Nota de arquitectura de routing: El archivo src/app/page.tsx, que contenía una redirección recursiva inerte sobre sí misma (redirect("/")), fue eliminado. Su existencia generaba un conflicto de rutas duplicadas en Next.js con src/app/(dashboard)/page.tsx, dado que los grupos de rutas no generan segmentos de URL. Su eliminación resuelve esta duplicación de rutas y limpia un bloque de código muerto y potencialmente defectuoso remanente del setup inicial. La ruta raíz / es servida exclusivamente por src/app/(dashboard)/page.tsx.
 Sistema de Roles
 paciente: solo /portal (pantalla de acceso restringido, sin funcionalidad).
 odontologo: dashboard completo, CRUD de pacientes y citas, gestión de odontograma y documentos, registro de pagos desde la cita, lectura de historial financiero en /finance y en la ficha del paciente.
