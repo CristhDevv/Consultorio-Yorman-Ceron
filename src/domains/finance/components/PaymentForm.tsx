@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useTransition, useRef } from "react"
+import { useState, useTransition, useRef, useCallback } from "react"
 import {
   registerPatientPayment,
+  getAppointmentPayments,
   type PaymentSuccess,
+  type AppointmentPaymentInfo,
 } from "@/domains/finance/actions"
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -23,7 +25,18 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
   const [isPending, startTransition] = useTransition()
   // Controlled state to toggle the conditional reversedPaymentId field
   const [selectedType, setSelectedType] = useState<"pago" | "reverso" | "">("")
+  const [payments, setPayments] = useState<AppointmentPaymentInfo[]>([])
+  const [loadingPayments, setLoadingPayments] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+
+  const fetchPayments = useCallback(async () => {
+    setLoadingPayments(true)
+    const res = await getAppointmentPayments(appointmentId)
+    if (res.success) {
+      setPayments(res.data)
+    }
+    setLoadingPayments(false)
+  }, [appointmentId])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -164,7 +177,13 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
             name="type"
             required
             value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value as "pago" | "reverso" | "")}
+            onChange={(e) => {
+              const val = e.target.value as "pago" | "reverso" | ""
+              setSelectedType(val)
+              if (val === "reverso") {
+                fetchPayments()
+              }
+            }}
             className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-100
                        focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500
                        disabled:opacity-50 disabled:cursor-not-allowed"
@@ -225,36 +244,55 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
           />
         </div>
 
-        {/* ID del pago a reversar — visible solo cuando type === "reverso" */}
-        {/*
-         * MEJORA FUTURA PENDIENTE: Este campo de texto libre debe reemplazarse por un
-         * selector inteligente que liste los pagos disponibles registrados para esta
-         * cita, usando una función de lectura adicional aún no definida en el dominio
-         * de finanzas. Por ahora, el administrador pega manualmente el UUID del pago
-         * original que desea reversar.
-         */}
         {selectedType === "reverso" && (
           <div className="sm:col-span-2 flex flex-col gap-1.5">
             <label
               htmlFor="payment-reversed-id"
               className="text-xs font-bold uppercase tracking-wider text-slate-400"
             >
-              ID del pago a reversar <span className="text-red-400">*</span>
+              Seleccionar pago a reversar <span className="text-red-400">*</span>
             </label>
-            <input
+            <select
               id="payment-reversed-id"
               name="reversedPaymentId"
-              type="text"
               required
-              placeholder="UUID del pago original…"
               className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-100
-                         placeholder:text-slate-600 font-mono text-xs
                          focus:outline-none focus:ring-2 focus:ring-amber-500/60 focus:border-amber-500
                          disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isPending}
-            />
+              disabled={isPending || loadingPayments}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                {loadingPayments
+                  ? "Cargando cobros..."
+                  : payments.filter((p) => p.type === "pago").length === 0
+                  ? "No hay cobros registrados en esta cita"
+                  : "Seleccionar cobro a reversar…"}
+              </option>
+              {payments
+                .filter((p) => p.type === "pago")
+                .map((p) => {
+                  const formattedAmount = p.amount.toLocaleString("es-CO", {
+                    style: "currency",
+                    currency: "COP",
+                    minimumFractionDigits: 0,
+                  })
+                  const formattedDate = new Date(p.createdAt).toLocaleDateString("es-CO", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                  return (
+                    <option key={p.id} value={p.id} disabled={p.isReversed}>
+                      {formattedAmount} - {formattedDate} {p.isReversed ? " (Ya revertido)" : ""}
+                    </option>
+                  )
+                })}
+            </select>
             <p className="text-amber-500/70 text-xs">
-              Pega aquí el ID exacto del pago registrado que deseas reversar.
+              Selecciona el pago registrado que deseas reversar.
             </p>
           </div>
         )}

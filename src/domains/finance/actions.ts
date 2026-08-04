@@ -304,3 +304,89 @@ export async function getPatientPaymentHistory(
     },
   }
 }
+
+// ---------------------------------------------------------------------------
+// getAppointmentPayments
+// ---------------------------------------------------------------------------
+
+export type AppointmentPaymentInfo = {
+  id: string
+  amount: number
+  createdAt: string
+  type: "pago" | "reverso"
+  isReversed: boolean
+}
+
+/**
+  * Returns the list of payments associated with an appointment.
+  * For each payment, determines if it has already been reversed.
+  * Accessible to both "administrador" and "odontologo" roles (read-only).
+  */
+export async function getAppointmentPayments(
+  appointmentId: string
+): Promise<ActionResult<AppointmentPaymentInfo[]>> {
+  const supabase = await createClient()
+
+  // 1. Session verification
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // 2. Real-time role verification — administrador OR odontologo may read
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  const allowedRoles = ["administrador", "odontologo"] as const
+  if (profileError || !profile || !(allowedRoles as readonly string[]).includes(profile.role)) {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo administradores y odontólogos pueden consultar pagos.",
+    }
+  }
+
+  // 3. Input guard
+  if (!appointmentId) {
+    return { success: false, error: "Debe proporcionar el ID de la cita." }
+  }
+
+  // 4. Query all payments for this appointment
+  const { data: payments, error: queryError } = await supabase
+    .from("patient_payments")
+    .select("id, amount, created_at, type, reversed_payment_id")
+    .eq("appointment_id", appointmentId)
+    .order("created_at", { ascending: true })
+
+  if (queryError) {
+    return { success: false, error: queryError.message }
+  }
+
+  // 5. Identify reversed payments
+  const reversedIds = new Set<string>()
+  for (const payment of payments ?? []) {
+    if (payment.type === "reverso" && payment.reversed_payment_id) {
+      reversedIds.add(payment.reversed_payment_id)
+    }
+  }
+
+  const result: AppointmentPaymentInfo[] = (payments ?? []).map((p) => ({
+    id: p.id,
+    amount: p.amount,
+    createdAt: p.created_at,
+    type: p.type as "pago" | "reverso",
+    isReversed: reversedIds.has(p.id),
+  }))
+
+  return {
+    success: true,
+    data: result,
+  }
+}
+
