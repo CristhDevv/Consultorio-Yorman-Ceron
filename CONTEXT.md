@@ -68,7 +68,8 @@ src/domains/finance/ (actions.ts — registerPatientPayment, getPatientPaymentHi
 src/app/(dashboard)/finance/ (page.tsx — vista de consulta de historial de pagos, accesible a administrador y odontólogo)
 src/domains/communications — 🟡 Esquema base — sin UI ni disparo automático
 src/domains/imaging — vacío, pendiente
-src/domains/reports — vacío, pendiente
+src/domains/reports/ (actions.ts — getFinancialReport, types.ts, components/ReportsDashboard.tsx, __tests__/ReportsDashboard.test.tsx, __tests__/actions.test.ts)
+src/app/(dashboard)/reports/ (page.tsx — dashboard de reportes financieros para administrador)
 src/shared/components/ui/ — shadcn/ui
 src/shared/lib/supabase/client.ts, server.ts
 src/shared/lib/utils.ts
@@ -110,7 +111,7 @@ Documentos del Paciente (Storage): Completo. Bucket patient-attachments privado 
 Inventario: Completo. Ruta /inventory con catálogo de lectura (Server Component) y formulario de registro de movimientos de stock (client component). La Server Action registerInventoryMovement valida el rol de administrador en tiempo real contra public.profiles, invoca exclusivamente la función RPC register_inventory_movement y maneja errores de stock insuficiente extrayendo el stock disponible con regex (/Stock insuficiente.*Disponible:\s*(\d+)/i) con fallback seguro si no coincide. El formulario permanece en la misma pantalla tras éxito limpiando campos y mostrando una confirmación del movimiento. Incluye 8 pruebas en total (2 de catálogo y 6 de Server Action) integradas al conteo total del proyecto. Base de datos: inventory_products, inventory_movements, RLS completa y función register_inventory_movement.
 Finanzas: Completo en su alcance actual. Esquema de base de datos: tabla patient_payments con campo de auto-referencia reversed_payment_id e índice único parcial anti-doble-reverso; columna appointments.amount para monto acordado de la cita. RPC transaccional register_patient_payment con bloqueo FOR UPDATE de todos los pagos de la cita para el cálculo y validación del saldo pendiente (contra appointments.amount), y bloqueo FOR UPDATE del pago original al registrar un reverso, validando montos y previniendo la doble reversión (reforzado también por el índice único a nivel de BD). Server Actions: registerPatientPayment (escritura, con validación de rol en tiempo real), getPatientPaymentHistory (lectura). UI de registro contextual integrada en la ficha de la cita (PaymentForm.tsx). UI de consulta de historial disponible en /finance (FinanceDashboard.tsx + PaymentHistoryView.tsx) y en la ficha del paciente. Cobertura de tests: Server Actions y componentes UI. Cuenta con un selector inteligente de cobros asociados a la cita que lista los pagos realizados, deshabilitando visualmente los que ya fueron revertidos y eliminando la entrada manual de UUID.
 Comunicaciones: Esquema de datos communication_logs con RLS y funciones SECURITY DEFINER en producción. Server Actions createCommunicationLog y updateCommunicationLogStatus implementadas usando exclusivamente RPC. Sin UI de administración, sin disparo automático de confirmación o recordatorio, sin proveedor de email conectado.
-Reportes: Pendiente.
+Reportes: Completo en su alcance actual. Server Action `getFinancialReport` que invoca la RPC transaccional segura `get_financial_report` para obtener métricas agregadas del rango (totales, por odontólogo y por motivo de cita). Interfaz visual `ReportsDashboard` integrada y protegida por rol (solo administrador) mediante redirección del servidor. Suite de 9 pruebas unitarias e integración en verde.
 Portal del Paciente: Descartado como funcionalidad de producto. /portal es únicamente pantalla de acceso restringido.
 Validaciones de Build
 npm run build → EXIT_CODE: 0
@@ -129,6 +130,5 @@ Historial local completo, organizado en commits lógicos por área. Sin reposito
 
 Pendientes Registrados — No Urgentes
 - Documentos del Paciente: botón de eliminación en UI deshabilitado temporalmente con etiqueta "Próximamente" — pendiente de habilitar cuando se defina flujo de confirmación.
-- Módulo de Reportes: sin iniciar. Dominio src/domains/reports vacío.
 - Repositorio remoto: sin git remote configurado. El historial local existe completo pero no tiene respaldo remoto.
 
