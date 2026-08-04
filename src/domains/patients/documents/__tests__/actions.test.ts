@@ -11,35 +11,25 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
-// ─── Tipos del mock ──────────────────────────────────────────────────────────
-interface MockStorageBucket {
-  remove: ReturnType<typeof vi.fn>;
-}
-
+// --- Tipos del mock -----------------------------------------------------------
 interface MockSupabase {
   auth: { getUser: ReturnType<typeof vi.fn> };
   from: ReturnType<typeof vi.fn>;
   storage: { from: ReturnType<typeof vi.fn> };
 }
 
-// ─── Constantes ──────────────────────────────────────────────────────────────
-const DOCUMENT_ID  = 'doc-uuid-1234';
-const PATIENT_ID   = 'patient-uuid-5678';
-const FILE_PATH    = `${PATIENT_ID}/some-uuid-sanitized.pdf`;
-const DOC_ROW      = { id: DOCUMENT_ID, file_path: FILE_PATH };
+// --- Constantes ---------------------------------------------------------------
+const DOCUMENT_ID        = 'doc-uuid-1234';
+const PATIENT_ID         = 'patient-uuid-5678';
+const DOC_ROW            = { id: DOCUMENT_ID };
 const AUTHENTICATED_USER = { id: 'user-admin-001' };
 
-// ─── Suite ───────────────────────────────────────────────────────────────────
+// --- Suite -------------------------------------------------------------------
 describe('deletePatientDocument', () => {
   let mockSupabase: MockSupabase;
-  let mockStorageBucket: MockStorageBucket;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockStorageBucket = {
-      remove: vi.fn(),
-    };
 
     mockSupabase = {
       auth: {
@@ -47,17 +37,15 @@ describe('deletePatientDocument', () => {
       },
       from: vi.fn(),
       storage: {
-        from: vi.fn().mockReturnValue(mockStorageBucket),
+        from: vi.fn(),
       },
     };
 
-    // Es seguro hacer cast a la firma de retorno de createClient ya que en este contexto
-    // de prueba unitaria solo necesitamos y validamos los métodos mockeados.
     vi.mocked(createClient).mockResolvedValue(
       mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>
     );
 
-    // Por defecto: sesión autenticada
+    // Por defecto: sesion autenticada
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: AUTHENTICATED_USER },
       error: null,
@@ -65,40 +53,37 @@ describe('deletePatientDocument', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // 1. Éxito completo
+  // 1. Exito completo (Soft Delete)
   // ---------------------------------------------------------------------------
-  it('1. éxito completo: fetch fila → remove Storage → delete BD → revalidatePath', async () => {
-    // Arrange — cadena .from("patient_documents").select().eq().single()
+  it('1. exito completo: fetch fila con deleted_at null -> update deleted_at -> revalidatePath', async () => {
+    // Arrange — cadena .from("patient_documents").select().eq().is().single()
     const mockSingle  = vi.fn().mockResolvedValue({ data: DOC_ROW, error: null });
-    const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockIs      = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockEqFetch = vi.fn().mockReturnValue({ is: mockIs });
     const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
 
-    // Cadena .from("patient_documents").delete().eq()
-    const mockEqDelete = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete   = vi.fn().mockReturnValue({ eq: mockEqDelete });
+    // Cadena .from("patient_documents").update().eq()
+    const mockEqUpdate = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate   = vi.fn().mockReturnValue({ eq: mockEqUpdate });
 
-    // Mockear por tabla
     mockSupabase.from.mockImplementation((tableName: string) => {
       if (tableName === 'profiles') {
         return {
           select: () => ({
             eq: () => ({
-              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
-            })
-          })
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null }),
+            }),
+          }),
         };
       }
       if (tableName === 'patient_documents') {
         return {
           select: mockSelect,
-          delete: mockDelete,
+          update: mockUpdate,
         };
       }
       return {};
     });
-
-    // Storage remove exitoso
-    mockStorageBucket.remove.mockResolvedValue({ error: null });
 
     // Act
     const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
@@ -106,46 +91,46 @@ describe('deletePatientDocument', () => {
     // Assert
     expect(result).toEqual({ success: true, data: null });
 
-    // Verificar llamadas a base de datos
+    // Verificar cadena de fetch: select("id").eq().is("deleted_at", null).single()
     expect(mockSupabase.from).toHaveBeenCalledTimes(3);
     expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
     expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
-    expect(mockSelect).toHaveBeenCalledWith('id, file_path');
+    expect(mockSelect).toHaveBeenCalledWith('id');
     expect(mockEqFetch).toHaveBeenCalledWith('id', DOCUMENT_ID);
+    expect(mockIs).toHaveBeenCalledWith('deleted_at', null);
 
-    // Verificar que se llamó a Storage con el file_path obtenido de la BD
-    expect(mockSupabase.storage.from).toHaveBeenCalledWith('patient-attachments');
-    expect(mockStorageBucket.remove).toHaveBeenCalledWith([FILE_PATH]);
+    // Storage.from nunca debe ser invocado
+    expect(mockSupabase.storage.from).not.toHaveBeenCalled();
 
-    // Verificar que se eliminó la fila de BD
+    // Verificar que se aplico el soft-delete (UPDATE)
     expect(mockSupabase.from).toHaveBeenNthCalledWith(3, 'patient_documents');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEqDelete).toHaveBeenCalledWith('id', DOCUMENT_ID);
+    expect(mockUpdate).toHaveBeenCalledWith({ deleted_at: expect.any(String) });
+    expect(mockEqUpdate).toHaveBeenCalledWith('id', DOCUMENT_ID);
 
-    // Verificar que se invalidó la caché de la ruta del paciente
+    // Verificar revalidacion de cache
     expect(revalidatePath).toHaveBeenCalledWith(`/patients/${PATIENT_ID}`);
   });
 
   // ---------------------------------------------------------------------------
-  // 2. Fila inexistente (fetchError o docRow null)
+  // 2. Fila inexistente o ya borrada (fetchError)
   // ---------------------------------------------------------------------------
-  it('2. fila inexistente: devuelve error, NO llama a Storage ni a delete de BD', async () => {
-    // Arrange — .single() retorna fetchError (fila no encontrada / sin permiso)
+  it('2. fila inexistente o ya borrada: devuelve error, NO realiza update', async () => {
     const mockSingle  = vi.fn().mockResolvedValue({
       data: null,
       error: { message: 'No rows found' },
     });
-    const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockIs      = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockEqFetch = vi.fn().mockReturnValue({ is: mockIs });
     const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
-    
+
     mockSupabase.from.mockImplementation((tableName: string) => {
       if (tableName === 'profiles') {
         return {
           select: () => ({
             eq: () => ({
-              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
-            })
-          })
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null }),
+            }),
+          }),
         };
       }
       if (tableName === 'patient_documents') {
@@ -154,41 +139,42 @@ describe('deletePatientDocument', () => {
       return {};
     });
 
-    // Act
     const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
 
-    // Assert — error esperado
     expect(result).toEqual({
       success: false,
       error: 'El documento no existe o no tienes permiso para eliminarlo.',
     });
 
-    // Storage.remove no debe haber sido invocado
-    expect(mockStorageBucket.remove).not.toHaveBeenCalled();
-
-    // Dos llamadas a .from() (profiles y fetch)
+    // Solo dos llamadas: profiles y fetch de patient_documents
     expect(mockSupabase.from).toHaveBeenCalledTimes(2);
     expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
     expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
 
-    // revalidatePath no debe haber sido invocado
+    // Sin llamadas a storage ni revalidacion
+    expect(mockSupabase.storage.from).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it('2b. fila inexistente (docRow null sin error): misma protección', async () => {
-    // Arrange — edge case: error null pero data también null
+  // ---------------------------------------------------------------------------
+  // 2b. Fila inexistente — edge case: data null con error null
+  // ---------------------------------------------------------------------------
+  it('2b. fila inexistente (docRow null sin error): misma proteccion que 2', async () => {
+    // Edge case: .single() retorna data: null y error: null simultaneamente.
+    // La condicion `if (fetchError || !docRow)` debe capturar la rama !docRow.
     const mockSingle  = vi.fn().mockResolvedValue({ data: null, error: null });
-    const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockIs      = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockEqFetch = vi.fn().mockReturnValue({ is: mockIs });
     const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
-    
+
     mockSupabase.from.mockImplementation((tableName: string) => {
       if (tableName === 'profiles') {
         return {
           select: () => ({
             eq: () => ({
-              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
-            })
-          })
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null }),
+            }),
+          }),
         };
       }
       if (tableName === 'patient_documents') {
@@ -197,163 +183,101 @@ describe('deletePatientDocument', () => {
       return {};
     });
 
-    // Act
     const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
 
-    // Assert
     expect(result).toEqual({
       success: false,
       error: 'El documento no existe o no tienes permiso para eliminarlo.',
     });
-    expect(mockStorageBucket.remove).not.toHaveBeenCalled();
-    expect(mockSupabase.from).toHaveBeenCalledTimes(2);
-    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
-    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
-    expect(revalidatePath).not.toHaveBeenCalled();
-  });
 
-  // ---------------------------------------------------------------------------
-  // 3. Fallo en Storage.remove
-  // ---------------------------------------------------------------------------
-  it('3. fallo en Storage: devuelve error con mención al almacenamiento, NO intenta borrar la fila de BD', async () => {
-    // Arrange — fetch de fila exitoso
-    const mockSingle  = vi.fn().mockResolvedValue({ data: DOC_ROW, error: null });
-    const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
-    
-    mockSupabase.from.mockImplementation((tableName: string) => {
-      if (tableName === 'profiles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
-            })
-          })
-        };
-      }
-      if (tableName === 'patient_documents') {
-        return { select: mockSelect };
-      }
-      return {};
-    });
-
-    // Storage.remove falla
-    mockStorageBucket.remove.mockResolvedValue({
-      error: { message: 'Object not found' },
-    });
-
-    // Act
-    const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
-
-    // Assert — mensaje de error debe mencionar almacenamiento y que la BD no fue modificada
-    expect(result).toEqual({
-      success: false,
-      error: 'No se pudo eliminar el archivo de almacenamiento: Object not found. La fila de base de datos no fue modificada.',
-    });
-
-    // Storage.remove sí fue llamado
-    expect(mockStorageBucket.remove).toHaveBeenCalledWith([FILE_PATH]);
-
-    // Dos llamadas a .from() (profiles y fetch)
+    // Solo dos llamadas: profiles y fetch de patient_documents
     expect(mockSupabase.from).toHaveBeenCalledTimes(2);
     expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
     expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
 
-    // revalidatePath no debe haber sido invocado
+    // Sin storage ni revalidacion — la rama !docRow se activo antes del UPDATE
+    expect(mockSupabase.storage.from).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------------------------
-  // 4. Storage exitoso pero fallo en delete de BD
+  // 3. Fallo en el UPDATE de la BD
   // ---------------------------------------------------------------------------
-  it('4. fallo en delete de BD tras Storage exitoso: devuelve error indicando inconsistencia que requiere revisión manual', async () => {
-    // Arrange — fetch de fila exitoso
+  it('3. fallo en update de BD: devuelve error indicando que no se pudo marcar', async () => {
     const mockSingle  = vi.fn().mockResolvedValue({ data: DOC_ROW, error: null });
-    const mockEqFetch = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockIs      = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockEqFetch = vi.fn().mockReturnValue({ is: mockIs });
     const mockSelect  = vi.fn().mockReturnValue({ eq: mockEqFetch });
 
-    // delete de BD falla
-    const mockEqDelete = vi.fn().mockResolvedValue({
+    const mockEqUpdate = vi.fn().mockResolvedValue({
       error: { message: 'permission denied for table patient_documents' },
     });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEqDelete });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEqUpdate });
 
     mockSupabase.from.mockImplementation((tableName: string) => {
       if (tableName === 'profiles') {
         return {
           select: () => ({
             eq: () => ({
-              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null })
-            })
-          })
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null }),
+            }),
+          }),
         };
       }
       if (tableName === 'patient_documents') {
         return {
           select: mockSelect,
-          delete: mockDelete,
+          update: mockUpdate,
         };
       }
       return {};
     });
 
-    // Storage.remove exitoso
-    mockStorageBucket.remove.mockResolvedValue({ error: null });
-
-    // Act
     const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
 
-    // Assert — mensaje debe mencionar la inconsistencia y la necesidad de revisión manual
     expect(result).toEqual({
       success: false,
-      error: 'El archivo fue eliminado de Storage pero la fila de base de datos no pudo borrarse: permission denied for table patient_documents. Se requiere revisión manual para restaurar la consistencia.',
+      error: 'No se pudo marcar el documento como eliminado: permission denied for table patient_documents.',
     });
 
-    // Verificar que Storage.remove SÍ fue llamado (ya borró el archivo)
-    expect(mockStorageBucket.remove).toHaveBeenCalledWith([FILE_PATH]);
-
-    // Verificar que se intentó el delete de BD (tres llamadas a .from())
+    // Tres llamadas: profiles, fetch, update
     expect(mockSupabase.from).toHaveBeenCalledTimes(3);
-    expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'profiles');
-    expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'patient_documents');
-    expect(mockSupabase.from).toHaveBeenNthCalledWith(3, 'patient_documents');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEqDelete).toHaveBeenCalledWith('id', DOCUMENT_ID);
+    expect(mockUpdate).toHaveBeenCalledWith({ deleted_at: expect.any(String) });
+    expect(mockEqUpdate).toHaveBeenCalledWith('id', DOCUMENT_ID);
 
-    // revalidatePath NO debe haberse invocado porque la operación falló
+    // Sin storage ni revalidacion
+    expect(mockSupabase.storage.from).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------------------------
-  // 5. Permisos de rol de administrador (Acceso denegado)
+  // 4. Rol no administrador
   // ---------------------------------------------------------------------------
-  it('5. rol no administrador: devuelve error de acceso denegado y no realiza ninguna acción', async () => {
+  it('4. rol no administrador: devuelve acceso denegado sin ninguna accion adicional', async () => {
     mockSupabase.from.mockImplementation((tableName: string) => {
       if (tableName === 'profiles') {
         return {
           select: () => ({
             eq: () => ({
-              single: () => Promise.resolve({ data: { role: 'odontologo' }, error: null })
-            })
-          })
+              single: () => Promise.resolve({ data: { role: 'odontologo' }, error: null }),
+            }),
+          }),
         };
       }
       return {};
     });
 
-    // Act
     const result = await deletePatientDocument(DOCUMENT_ID, PATIENT_ID);
 
-    // Assert
     expect(result).toEqual({
       success: false,
       error: 'Acceso denegado. Solo los administradores pueden eliminar documentos.',
     });
 
-    // No debe haber intentado buscar ni borrar de patient_documents (solo profiles)
+    // Solo una llamada: profiles
     expect(mockSupabase.from).toHaveBeenCalledTimes(1);
     expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
-    expect(mockStorageBucket.remove).not.toHaveBeenCalled();
+    expect(mockSupabase.storage.from).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

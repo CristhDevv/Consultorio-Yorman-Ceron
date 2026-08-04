@@ -244,6 +244,7 @@ export type Database = {
         Row: {
           bucket_id: string
           created_at: string
+          deleted_at: string | null
           document_type: string
           file_name: string
           file_path: string
@@ -254,6 +255,7 @@ export type Database = {
         Insert: {
           bucket_id?: string
           created_at?: string
+          deleted_at?: string | null
           document_type: string
           file_name: string
           file_path: string
@@ -264,6 +266,7 @@ export type Database = {
         Update: {
           bucket_id?: string
           created_at?: string
+          deleted_at?: string | null
           document_type?: string
           file_name?: string
           file_path?: string

@@ -9,7 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog"
 import type { ActionResult } from "@/domains/patients/documents/actions"
+
 
 // ─── Tipos ──────────────────────────────────────────────────────────────────
 interface DocumentRow {
@@ -123,12 +132,18 @@ export default function PatientDocuments({
     }
   }
 
+  // — Estado de confirmación de eliminación ───────────────────────────────
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
   // — Manejador: eliminar documento ─────────────────────────────────────────
-  async function handleDelete(docId: string) {
-    const confirmed = window.confirm(
-      "¿Está seguro de que desea eliminar este documento? Esta acción no se puede deshacer."
-    )
-    if (!confirmed) return
+  function handleDelete(docId: string) {
+    setConfirmDeleteId(docId)
+  }
+
+  async function handleConfirmDelete() {
+    if (!confirmDeleteId) return
+    const docId = confirmDeleteId
+    setConfirmDeleteId(null)
 
     setDeleteLoading((prev) => ({ ...prev, [docId]: true }))
     setDeleteErrors((prev) => ({ ...prev, [docId]: "" }))
@@ -141,6 +156,7 @@ export default function PatientDocuments({
       setDeleteErrors((prev) => ({ ...prev, [docId]: result.error }))
     }
   }
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -290,6 +306,35 @@ export default function PatientDocuments({
           </form>
         </CardContent>
       </Card>
+
+      {/* Modal de confirmación de eliminación */}
+      <Dialog open={confirmDeleteId !== null} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null) }}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-white">Confirmar Eliminación</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              ¿Está seguro de que desea eliminar este documento? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              id="btn-cancelar-eliminacion"
+              variant="outline"
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              onClick={() => setConfirmDeleteId(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              id="btn-confirmar-eliminacion"
+              className="bg-red-600 hover:bg-red-700 text-white font-medium"
+              onClick={handleConfirmDelete}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

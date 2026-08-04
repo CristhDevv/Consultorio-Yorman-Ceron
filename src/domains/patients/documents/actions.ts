@@ -182,6 +182,7 @@ export async function getPatientDocuments(
     .from("patient_documents")
     .select("id, document_type, file_name, file_path, uploaded_by, created_at, bucket_id")
     .eq("patient_id", patientId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -259,12 +260,13 @@ export async function deletePatientDocument(
     }
   }
 
-  // — Obtener la fila real para recuperar file_path desde la BD ─────────────
-  // Nunca se confía en un path recibido del cliente.
+  // — Obtener la fila real de la BD ─────────────────────────────────────────
+  // Nunca se confía en un id/path recibido del cliente.
   const { data: docRow, error: fetchError } = await supabase
     .from("patient_documents")
-    .select("id, file_path")
+    .select("id")
     .eq("id", documentId)
+    .is("deleted_at", null)
     .single()
 
   if (fetchError || !docRow) {
@@ -274,34 +276,16 @@ export async function deletePatientDocument(
     }
   }
 
-  const filePath = docRow.file_path
-
-  // — Eliminar el archivo físico de Storage primero ─────────────────────────
-  // Si esto falla, no se toca la fila de base de datos para evitar
-  // que la BD diga que no existe un archivo que sigue en Storage.
-  const { error: storageError } = await supabase.storage
-    .from(BUCKET)
-    .remove([filePath])
-
-  if (storageError) {
-    return {
-      success: false,
-      error: `No se pudo eliminar el archivo de almacenamiento: ${storageError.message}. La fila de base de datos no fue modificada.`,
-    }
-  }
-
-  // — Eliminar la fila de patient_documents ─────────────────────────────────
-  // El archivo físico ya fue borrado. Si este paso falla, se reporta
-  // explícitamente como inconsistencia visible, nunca silenciosa.
+  // — Soft-delete: marcar la fila como eliminada en patient_documents ───────
   const { error: deleteError } = await supabase
     .from("patient_documents")
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", documentId)
 
   if (deleteError) {
     return {
       success: false,
-      error: `El archivo fue eliminado de Storage pero la fila de base de datos no pudo borrarse: ${deleteError.message}. Se requiere revisión manual para restaurar la consistencia.`,
+      error: `No se pudo marcar el documento como eliminado: ${deleteError.message}.`,
     }
   }
 
