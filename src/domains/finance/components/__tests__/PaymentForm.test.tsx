@@ -34,18 +34,22 @@ describe("PaymentForm Component", () => {
     expect(document.getElementById("payment-reversed-id")).not.toBeInTheDocument()
   })
 
-  it("2. el campo reversedPaymentId aparece y desaparece condicionalmente según el tipo seleccionado", () => {
+  it("2. el campo reversedPaymentId aparece y desaparece condicionalmente según el tipo seleccionado", async () => {
     render(<PaymentForm appointmentId={APPOINTMENT_ID} patientId={PATIENT_ID} />)
 
     const typeSelect = screen.getByLabelText(/Tipo/i)
 
     // Act - Select 'reverso'
     fireEvent.change(typeSelect, { target: { value: "reverso" } })
-    expect(document.getElementById("payment-reversed-id")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(document.getElementById("payment-reversed-id")).toBeInTheDocument()
+    })
 
     // Act - Select 'pago' → el campo debe desaparecer
     fireEvent.change(typeSelect, { target: { value: "pago" } })
-    expect(document.getElementById("payment-reversed-id")).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(document.getElementById("payment-reversed-id")).not.toBeInTheDocument()
+    })
   })
 
   it("3. validación de cliente bloquea el envío y muestra error si los campos requeridos no cumplen las restricciones", async () => {

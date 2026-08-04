@@ -28,25 +28,11 @@ export async function getFinancialReport(
     return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
   }
 
-  // Interfaz local para extender el tipado de supabase.rpc con la nueva función get_financial_report
-  type SupabaseClientWithReport = Omit<typeof supabase, "rpc"> & {
-    rpc(
-      relation: "get_financial_report",
-      args: { p_date_from: string; p_date_to: string }
-    ): Promise<{ data: unknown; error: { message: string } | null }>
-  }
-
   // 2. Call RPC get_financial_report
-  // NOTA: Se castea temporalmente el cliente al tipo SupabaseClientWithReport para declarar
-  // la firma de la nueva función RPC. Esto mantiene el tipado estático del resto del cliente,
-  // evita el uso de 'any' y permite que el contrato sea seguro en TypeScript.
-  const { data, error: rpcError } = await (supabase as unknown as SupabaseClientWithReport).rpc(
-    "get_financial_report",
-    {
-      p_date_from: dateFrom,
-      p_date_to: dateTo,
-    }
-  )
+  const { data, error: rpcError } = await supabase.rpc("get_financial_report", {
+    p_date_from: dateFrom,
+    p_date_to: dateTo,
+  })
 
   if (rpcError) {
     if (
@@ -63,6 +49,6 @@ export async function getFinancialReport(
 
   return {
     success: true,
-    data: data as FinancialReportResponse,
+    data: data as unknown as FinancialReportResponse,
   }
 }
