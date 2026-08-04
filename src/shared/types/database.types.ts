@@ -74,6 +74,60 @@ export type Database = {
           },
         ]
       }
+      communication_logs: {
+        Row: {
+          appointment_id: string
+          channel: string
+          created_at: string
+          created_by: string
+          error_message: string | null
+          event_type: string
+          id: string
+          patient_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          appointment_id: string
+          channel: string
+          created_at?: string
+          created_by: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          patient_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          appointment_id?: string
+          channel?: string
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          patient_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_logs_appointment_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_logs_patient_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_movements: {
         Row: {
           created_at: string
@@ -375,6 +429,16 @@ export type Database = {
         Args: { duration_minutes: number; starts_at: string }
         Returns: unknown
       }
+      insert_communication_log: {
+        Args: {
+          p_appointment_id: string
+          p_channel: string
+          p_created_by: string
+          p_event_type: string
+          p_patient_id: string
+        }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
       is_odontologo: { Args: never; Returns: boolean }
       register_inventory_movement: {
@@ -398,6 +462,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      update_communication_log_status: {
+        Args: { p_error_message?: string; p_log_id: string; p_status: string }
+        Returns: undefined
       }
     }
     Enums: {
