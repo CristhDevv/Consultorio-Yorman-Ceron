@@ -59,7 +59,7 @@ src/app/(dashboard)/appointments/ (page, new, [id], [id]/edit)
 src/app/portal/page.tsx — pantalla de acceso restringido, no portal funcional
 src/api/auth/logout/route.ts
 src/domains/patients/ (actions.ts, components: PatientForm, PatientTable, PatientDetailCard, __tests__/actions.test.ts)
-src/domains/patients/documents/ (actions.ts — uploadPatientDocument, getPatientDocuments [filtra deleted_at IS NULL], getDocumentSignedUrl [sin validación de deleted_at — ver pendiente técnico de seguridad], deletePatientDocument [soft delete: valida rol administrador, verifica deleted_at IS NULL, aplica UPDATE deleted_at = now() — no toca Storage ni elimina fila]; components/PatientDocuments.tsx)
+src/domains/patients/documents/ (actions.ts — uploadPatientDocument, getPatientDocuments [filtra deleted_at IS NULL], getDocumentSignedUrl [valida rol administrador y verifica que el documento exista y deleted_at IS NULL antes de firmar], deletePatientDocument [soft delete: valida rol administrador, verifica deleted_at IS NULL, aplica UPDATE deleted_at = now() — no toca Storage ni elimina fila]; components/PatientDocuments.tsx)
 src/domains/appointments/ (actions.ts, config.ts, availability.ts, components: AppointmentsTable, AppointmentForm, AppointmentEditForm, AppointmentStatusControl, __tests__: actions.test.ts, availability.test.ts, AppointmentForm.test.tsx)
 src/domains/clinical/odontogram/ (actions.ts, components/OdontogramChart.tsx, __tests__: actions.test.ts, OdontogramChart.test.tsx)
 src/domains/inventory/ (actions.ts — getInventoryProducts; __tests__/page.test.tsx vía src/app/(dashboard)/inventory/__tests__/)
@@ -133,5 +133,4 @@ Pendientes Registrados — No Urgentes
 - Repositorio remoto: sin git remote configurado. El historial local existe completo pero no tiene respaldo remoto.
 
 Pendientes Técnicos Registrados
-- [SEGURIDAD] getDocumentSignedUrl no valida deleted_at: la función genera una URL firmada de Storage a partir del filePath que recibe del cliente, sin consultar la tabla patient_documents. Un documento marcado con soft delete sigue siendo accesible vía esta función si el llamador tiene o puede reconstruir el path. Para que el soft delete opere como restricción de acceso real, esta función debe verificar primero que la fila exista con deleted_at IS NULL antes de firmar la URL. Decisión de diseño pendiente de instrucción explícita.
 - construir UI de administración, disparo automático de confirmación y recordatorio, e integración de proveedor de email para communications (Prioridad: Sin fecha hasta nueva instrucción).

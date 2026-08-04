@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { deletePatientDocument } from '../actions';
+import { deletePatientDocument, getDocumentSignedUrl } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -279,5 +279,149 @@ describe('deletePatientDocument', () => {
     expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
     expect(mockSupabase.storage.from).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Suite de pruebas para getDocumentSignedUrl
+// ═══════════════════════════════════════════════════════════════════════════
+describe('getDocumentSignedUrl', () => {
+  let mockSupabase: MockSupabase;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockSupabase = {
+      auth: {
+        getUser: vi.fn(),
+      },
+      from: vi.fn(),
+      storage: {
+        from: vi.fn(),
+      },
+    };
+
+    vi.mocked(createClient).mockResolvedValue(
+      mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>
+    );
+
+    // Por defecto: sesion autenticada
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: AUTHENTICATED_USER },
+      error: null,
+    });
+  });
+
+  it('1. sin sesion activa: devuelve error', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: null },
+      error: new Error('Session error'),
+    });
+
+    const result = await getDocumentSignedUrl('some/file/path');
+
+    expect(result).toEqual({
+      success: false,
+      error: 'No hay sesión activa. Por favor inicia sesión.',
+    });
+  });
+
+  it('2. con sesion pero rol distinto de administrador: devuelve acceso denegado', async () => {
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'odontologo' }, error: null }),
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const result = await getDocumentSignedUrl('some/file/path');
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Acceso denegado. Solo los administradores pueden generar URLs firmadas para ver o descargar documentos.',
+    });
+  });
+
+  it('3. con rol administrador pero documento inexistente o deleted_at no nulo: devuelve error de no disponible', async () => {
+    const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const mockIs = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+    const mockEq = vi.fn().mockReturnValue({ is: mockIs });
+    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null }),
+            }),
+          }),
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return { select: mockSelect };
+      }
+      return {};
+    });
+
+    const result = await getDocumentSignedUrl('some/file/path');
+
+    expect(result).toEqual({
+      success: false,
+      error: 'El documento no existe o no está disponible.',
+    });
+
+    expect(mockSelect).toHaveBeenCalledWith('id');
+    expect(mockEq).toHaveBeenCalledWith('file_path', 'some/file/path');
+    expect(mockIs).toHaveBeenCalledWith('deleted_at', null);
+    expect(mockSupabase.storage.from).not.toHaveBeenCalled();
+  });
+
+  it('4. con rol administrador y documento activo: genera URL firmada exitosamente', async () => {
+    const mockMaybeSingle = vi.fn().mockResolvedValue({ data: { id: 'doc-123' }, error: null });
+    const mockIs = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+    const mockEq = vi.fn().mockReturnValue({ is: mockIs });
+    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+
+    const mockCreateSignedUrl = vi.fn().mockResolvedValue({ data: { signedUrl: 'https://supabase.signed.url' }, error: null });
+
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { role: 'administrador' }, error: null }),
+            }),
+          }),
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return { select: mockSelect };
+      }
+      return {};
+    });
+
+    mockSupabase.storage.from.mockReturnValue({
+      createSignedUrl: mockCreateSignedUrl,
+    });
+
+    const result = await getDocumentSignedUrl('some/file/path');
+
+    expect(result).toEqual({
+      success: true,
+      data: { signedUrl: 'https://supabase.signed.url' },
+    });
+
+    expect(mockSelect).toHaveBeenCalledWith('id');
+    expect(mockEq).toHaveBeenCalledWith('file_path', 'some/file/path');
+    expect(mockIs).toHaveBeenCalledWith('deleted_at', null);
+    expect(mockSupabase.storage.from).toHaveBeenCalledWith('patient-attachments');
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith('some/file/path', 60);
   });
 });

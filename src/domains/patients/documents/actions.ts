@@ -213,6 +213,36 @@ export async function getDocumentSignedUrl(
     return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
   }
 
+  // — Validar rol de administrador en tiempo real ──────────────────────────
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || profile?.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden generar URLs firmadas para ver o descargar documentos.",
+    }
+  }
+
+  // — Validar existencia y disponibilidad del archivo en la BD ─────────────
+  // file_path no tiene constraint de unicidad en el esquema físico (se genera con UUID de forma única por lógica de negocio)
+  const { data: docRow, error: fetchError } = await supabase
+    .from("patient_documents")
+    .select("id")
+    .eq("file_path", filePath)
+    .is("deleted_at", null)
+    .maybeSingle()
+
+  if (fetchError || !docRow) {
+    return {
+      success: false,
+      error: "El documento no existe o no está disponible.",
+    }
+  }
+
   const { data, error } = await supabase.storage
     .from(BUCKET)
     .createSignedUrl(filePath, 60) // 60 segundos de expiración
