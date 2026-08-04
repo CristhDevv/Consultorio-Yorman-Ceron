@@ -429,6 +429,10 @@ export type Database = {
         Args: { duration_minutes: number; starts_at: string }
         Returns: unknown
       }
+      get_financial_report: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: Json
+      }
       insert_communication_log: {
         Args: {
           p_appointment_id: string
