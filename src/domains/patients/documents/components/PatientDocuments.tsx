@@ -313,7 +313,7 @@ export default function PatientDocuments({
           <DialogHeader>
             <DialogTitle className="text-white">Confirmar Eliminación</DialogTitle>
             <DialogDescription className="text-slate-400">
-              ¿Está seguro de que desea eliminar este documento? Esta acción no se puede deshacer.
+              El documento dejará de estar disponible en el sistema de forma permanente.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

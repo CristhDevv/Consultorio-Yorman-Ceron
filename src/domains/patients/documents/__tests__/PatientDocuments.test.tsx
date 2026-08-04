@@ -59,7 +59,7 @@ describe('PatientDocuments Component', () => {
     // Confirmation dialog should be opened
     expect(screen.getByText('Confirmar Eliminación')).toBeInTheDocument();
     expect(
-      screen.getByText('¿Está seguro de que desea eliminar este documento? Esta acción no se puede deshacer.')
+      screen.getByText('El documento dejará de estar disponible en el sistema de forma permanente.')
     ).toBeInTheDocument();
   });
 
