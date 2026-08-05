@@ -83,6 +83,13 @@ function formatDateTime(isoString: string): string {
 
 export default function AppointmentsTable({ initialAppointments }: AppointmentsTableProps) {
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value)
+    setCurrentPage(1)
+  }
 
   const filteredAppointments = initialAppointments.filter((a) => {
     const q = search.toLowerCase()
@@ -91,6 +98,12 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
     return patientName.includes(q) || dentistName.includes(q)
   })
 
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage)
+  const paginatedAppointments = filteredAppointments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   return (
     <div className="flex flex-col gap-4">
       {/* Controles de Búsqueda y Acción */}
@@ -98,7 +111,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
         <Input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearchChange}
           placeholder="Buscar por nombre del paciente u odontólogo..."
           className="bg-white border-border text-foreground focus:border-primary w-full sm:max-w-md"
         />
@@ -123,7 +136,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAppointments.length === 0 ? (
+            {paginatedAppointments.length === 0 ? (
               <TableRow className="border-b border-border hover:bg-transparent">
                 <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   {search
@@ -132,7 +145,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAppointments.map((appointment) => (
+              paginatedAppointments.map((appointment) => (
                 <TableRow
                   key={appointment.id}
                   className="border-b border-border/60 hover:bg-muted/30 transition-colors"
@@ -156,6 +169,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
                     <div className="flex justify-end gap-2">
                       <Link href={`/appointments/${appointment.id}`}>
                         <Button
+                          type="button"
                           variant="ghost"
                           className="text-primary hover:text-primary/90 hover:bg-primary/10 h-8 px-3"
                         >
@@ -164,6 +178,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
                       </Link>
                       <Link href={`/appointments/${appointment.id}/edit`}>
                         <Button
+                          type="button"
                           variant="ghost"
                           className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 px-3"
                         >
@@ -178,6 +193,35 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
           </TableBody>
         </Table>
       </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white border border-border p-4 rounded-xl shadow-sm">
+          <p className="text-sm text-muted-foreground">
+            Mostrando <span className="font-semibold text-foreground">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredAppointments.length)}</span> a <span className="font-semibold text-foreground">{Math.min(currentPage * itemsPerPage, filteredAppointments.length)}</span> de <span className="font-semibold text-foreground">{filteredAppointments.length}</span> citas
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="text-foreground border-border hover:bg-muted font-medium"
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="text-foreground border-border hover:bg-muted font-medium"
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

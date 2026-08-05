@@ -23,6 +23,13 @@ interface PatientTableProps {
 
 export default function PatientTable({ initialPatients }: PatientTableProps) {
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value)
+    setCurrentPage(1)
+  }
 
   // Filtrado reactivo en el cliente para inmediatez absoluta
   const filteredPatients = initialPatients.filter((p) => {
@@ -34,6 +41,12 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
     )
   })
 
+  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage)
+  const paginatedPatients = filteredPatients.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   return (
     <div className="flex flex-col gap-4">
       {/* Controles de Búsqueda y Acción */}
@@ -41,7 +54,7 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
         <Input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={handleSearchChange}
           placeholder="Buscar por nombre, documento o teléfono..."
           className="bg-white border-border text-foreground focus:border-primary w-full sm:max-w-md"
         />
@@ -66,14 +79,14 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPatients.length === 0 ? (
+            {paginatedPatients.length === 0 ? (
               <TableRow className="border-b border-border hover:bg-transparent">
                 <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   No se encontraron pacientes registrados en el sistema.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPatients.map((patient) => {
+              paginatedPatients.map((patient) => {
                 // Generar badges de alerta si tiene antecedentes
                 const hasAllergies = patient.allergies && patient.allergies.trim().length > 0
                 const hasDiseases = patient.diseases && patient.diseases.trim().length > 0
@@ -130,6 +143,35 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white border border-border p-4 rounded-xl shadow-sm">
+          <p className="text-sm text-muted-foreground">
+            Mostrando <span className="font-semibold text-foreground">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredPatients.length)}</span> a <span className="font-semibold text-foreground">{Math.min(currentPage * itemsPerPage, filteredPatients.length)}</span> de <span className="font-semibold text-foreground">{filteredPatients.length}</span> pacientes
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="text-foreground border-border hover:bg-muted font-medium"
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="text-foreground border-border hover:bg-muted font-medium"
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
