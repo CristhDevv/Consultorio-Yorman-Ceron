@@ -4,6 +4,7 @@ import { createClient } from "@/shared/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 
 import { getAvailableSlots } from "./availability"
+import { sendConfirmationEmail } from "../communications/email"
 
 // Códigos de error de PostgreSQL relevantes para este dominio:
 // 23505 → unique_violation      (llave duplicada)
@@ -98,16 +99,20 @@ export async function createAppointment(input: AppointmentInput) {
     return { success: false, error: "Sesión no iniciada" }
   }
 
-  const { error } = await supabase.from("appointments").insert({
-    patient_id: input.patient_id,
-    dentist_id: input.dentist_id,
-    starts_at: input.starts_at,
-    duration_minutes: input.duration_minutes,
-    status: input.status,
-    reason: input.reason || null,
-    notes: input.notes || null,
-    created_by: user.id,
-  })
+  const { data: newAppt, error } = await supabase
+    .from("appointments")
+    .insert({
+      patient_id: input.patient_id,
+      dentist_id: input.dentist_id,
+      starts_at: input.starts_at,
+      duration_minutes: input.duration_minutes,
+      status: input.status,
+      reason: input.reason || null,
+      notes: input.notes || null,
+      created_by: user.id,
+    })
+    .select("id")
+    .single()
 
   if (error) {
     // Error 23P01: exclusion_violation
@@ -122,6 +127,99 @@ export async function createAppointment(input: AppointmentInput) {
     return { success: false, error: error.message }
   }
 
+  // Si el insert fue exitoso y el estado es confirmada
+  if (input.status === "confirmada" && newAppt?.id) {
+    const id = newAppt.id
+    const { data: apptWithDetails } = await supabase
+      .from("appointments")
+      .select(`
+        starts_at,
+        patient_id,
+        patients (
+          full_name,
+          email
+        ),
+        profiles (
+          full_name
+        )
+      `)
+      .eq("id", id)
+      .single()
+
+    if (apptWithDetails) {
+      let formattedDate = ""
+      let formattedTime = ""
+      try {
+        const dateObj = new Date(apptWithDetails.starts_at)
+        formattedDate = dateObj.toLocaleDateString("es-CO", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+        formattedTime = dateObj.toLocaleTimeString("es-CO", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      } catch {
+        formattedDate = apptWithDetails.starts_at
+      }
+
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      const logCreatedBy = currentUser?.id || "00000000-0000-0000-0000-000000000000"
+
+      // Crear log de comunicación con status pending
+      const { data: logId } = await supabase.rpc("insert_communication_log", {
+        p_appointment_id: id,
+        p_patient_id: apptWithDetails.patient_id,
+        p_channel: "email",
+        p_event_type: "confirmation",
+        p_created_by: logCreatedBy,
+      })
+
+      if (logId) {
+        // Enviar correo envolviendo en try/catch independiente
+        try {
+          const patientsData = apptWithDetails.patients as { full_name: string; email: string | null } | null
+          const profilesData = apptWithDetails.profiles as { full_name: string } | null
+
+          const recipientEmail = patientsData?.email || ""
+          const patientName = patientsData?.full_name || "Paciente"
+          const dentistName = profilesData?.full_name || undefined
+
+          const emailResult = await sendConfirmationEmail({
+            to: recipientEmail,
+            patientName,
+            appointmentDate: formattedDate,
+            appointmentTime: formattedTime,
+            dentistName,
+          })
+
+          // Actualizar estado de envío según resultado
+          if (emailResult.success) {
+            await supabase.rpc("update_communication_log_status", {
+              p_log_id: logId,
+              p_status: "sent",
+            })
+          } else {
+            await supabase.rpc("update_communication_log_status", {
+              p_log_id: logId,
+              p_status: "failed",
+              p_error_message: emailResult.error,
+            })
+          }
+        } catch (emailError: unknown) {
+          const errMessage = emailError instanceof Error ? emailError.message : "Error inesperado al enviar email"
+          await supabase.rpc("update_communication_log_status", {
+            p_log_id: logId,
+            p_status: "failed",
+            p_error_message: errMessage,
+          })
+        }
+      }
+    }
+  }
+
   revalidatePath("/appointments")
   return { success: true }
 }
@@ -134,6 +232,17 @@ export async function createAppointment(input: AppointmentInput) {
 // ---------------------------------------------------------------------------
 export async function updateAppointment(id: string, input: Partial<AppointmentInput>) {
   const supabase = await createClient()
+
+  // 1. Obtener el estado actual de la cita antes de actualizarla
+  const { data: oldAppointment } = await supabase
+    .from("appointments")
+    .select("status")
+    .eq("id", id)
+    .single()
+
+  const isTransitionToConfirmed =
+    input.status === "confirmada" &&
+    oldAppointment?.status !== "confirmada"
 
   const { error } = await supabase
     .from("appointments")
@@ -159,6 +268,98 @@ export async function updateAppointment(id: string, input: Partial<AppointmentIn
       }
     }
     return { success: false, error: error.message }
+  }
+
+  // 2. Si el update fue exitoso y es transición a confirmada
+  if (isTransitionToConfirmed) {
+    const { data: apptWithDetails } = await supabase
+      .from("appointments")
+      .select(`
+        starts_at,
+        patient_id,
+        patients (
+          full_name,
+          email
+        ),
+        profiles (
+          full_name
+        )
+      `)
+      .eq("id", id)
+      .single()
+
+    if (apptWithDetails) {
+      let formattedDate = ""
+      let formattedTime = ""
+      try {
+        const dateObj = new Date(apptWithDetails.starts_at)
+        formattedDate = dateObj.toLocaleDateString("es-CO", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+        formattedTime = dateObj.toLocaleTimeString("es-CO", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      } catch {
+        formattedDate = apptWithDetails.starts_at
+      }
+
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      const logCreatedBy = currentUser?.id || "00000000-0000-0000-0000-000000000000"
+
+      // 3. Crear log de comunicación con status pending
+      const { data: logId } = await supabase.rpc("insert_communication_log", {
+        p_appointment_id: id,
+        p_patient_id: apptWithDetails.patient_id,
+        p_channel: "email",
+        p_event_type: "confirmation",
+        p_created_by: logCreatedBy,
+      })
+
+      if (logId) {
+        // 4. Enviar correo envolviendo en try/catch independiente
+        try {
+          const patientsData = apptWithDetails.patients as { full_name: string; email: string | null } | null
+          const profilesData = apptWithDetails.profiles as { full_name: string } | null
+
+          const recipientEmail = patientsData?.email || ""
+          const patientName = patientsData?.full_name || "Paciente"
+          const dentistName = profilesData?.full_name || undefined
+
+          const emailResult = await sendConfirmationEmail({
+            to: recipientEmail,
+            patientName,
+            appointmentDate: formattedDate,
+            appointmentTime: formattedTime,
+            dentistName,
+          })
+
+          // 5. Actualizar estado de envío según resultado
+          if (emailResult.success) {
+            await supabase.rpc("update_communication_log_status", {
+              p_log_id: logId,
+              p_status: "sent",
+            })
+          } else {
+            await supabase.rpc("update_communication_log_status", {
+              p_log_id: logId,
+              p_status: "failed",
+              p_error_message: emailResult.error,
+            })
+          }
+        } catch (emailError: unknown) {
+          const errMessage = emailError instanceof Error ? emailError.message : "Error inesperado al enviar email"
+          await supabase.rpc("update_communication_log_status", {
+            p_log_id: logId,
+            p_status: "failed",
+            p_error_message: errMessage,
+          })
+        }
+      }
+    }
   }
 
   revalidatePath("/appointments")
