@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   return NextResponse.json({
+    envKeys: Object.keys(process.env),
     supabaseUrl: {
       defined: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       length: process.env.NEXT_PUBLIC_SUPABASE_URL?.length || 0,
