@@ -111,3 +111,190 @@ export async function updateCommunicationLogStatus(
 
   return { success: true, data: null }
 }
+
+export interface CommunicationLogWithPatient {
+  id: string
+  appointment_id: string
+  patient_id: string
+  channel: string
+  event_type: string
+  status: string
+  error_message: string | null
+  created_at: string
+  sent_at: string | null
+  patients: {
+    full_name: string
+  } | null
+}
+
+export type CommunicationLogsFilter = {
+  status?: string
+  patientId?: string
+}
+
+export type PatientWithLogs = {
+  id: string
+  full_name: string
+}
+
+/**
+ * Retrieves communication logs for administrative display, ordered by created_at descending.
+ * Requires active session and administrator role.
+ */
+export async function getCommunicationLogs(
+  filters?: CommunicationLogsFilter
+): Promise<ActionResult<CommunicationLogWithPatient[]>> {
+  const supabase = await createClient()
+
+  // 1. Session verification
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // 2. Role verification (strictly administrator)
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || !profile || profile.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden consultar los logs de comunicación.",
+    }
+  }
+
+  // 3. Query communication logs
+  let query = supabase
+    .from("communication_logs")
+    .select(`
+      id,
+      appointment_id,
+      patient_id,
+      channel,
+      event_type,
+      status,
+      error_message,
+      created_at,
+      sent_at,
+      patients (
+        full_name
+      )
+    `)
+
+  if (filters?.status) {
+    query = query.eq("status", filters.status)
+  }
+  if (filters?.patientId) {
+    query = query.eq("patient_id", filters.patientId)
+  }
+
+  const { data, error: queryError } = await query.order("created_at", {
+    ascending: false,
+  })
+
+  if (queryError) {
+    return { success: false, error: queryError.message }
+  }
+
+  const typedData = (data as unknown as {
+    id: string
+    appointment_id: string
+    patient_id: string
+    channel: string
+    event_type: string
+    status: string
+    error_message: string | null
+    created_at: string
+    sent_at: string | null
+    patients: {
+      full_name: string
+    } | null
+  }[] || []).map((row) => ({
+    id: row.id,
+    appointment_id: row.appointment_id,
+    patient_id: row.patient_id,
+    channel: row.channel,
+    event_type: row.event_type,
+    status: row.status,
+    error_message: row.error_message,
+    created_at: row.created_at,
+    sent_at: row.sent_at,
+    patients: row.patients ? { full_name: row.patients.full_name } : null,
+  }))
+
+  return { success: true, data: typedData }
+}
+
+/**
+ * Retrieves unique list of patients who have at least one communication log.
+ * Requires active session and administrator role.
+ */
+export async function getPatientsWithCommunicationLogs(): Promise<
+  ActionResult<PatientWithLogs[]>
+> {
+  const supabase = await createClient()
+
+  // 1. Session verification
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // 2. Role verification (strictly administrator)
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || !profile || profile.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden consultar pacientes con logs.",
+    }
+  }
+
+  // 3. Query patients from logs
+  const { data, error: queryError } = await supabase
+    .from("communication_logs")
+    .select(`
+      patient_id,
+      patients (
+        id,
+        full_name
+      )
+    `)
+
+  if (queryError) {
+    return { success: false, error: queryError.message }
+  }
+
+  const patientMap = new Map<string, string>()
+  for (const log of data || []) {
+    const patient = log.patients as { id: string; full_name: string } | null
+    if (patient && patient.id && patient.full_name) {
+      patientMap.set(patient.id, patient.full_name)
+    }
+  }
+
+  const uniquePatients: PatientWithLogs[] = Array.from(patientMap.entries()).map(
+    ([id, full_name]) => ({
+      id,
+      full_name,
+    })
+  )
+
+  return { success: true, data: uniquePatients }
+}
+
