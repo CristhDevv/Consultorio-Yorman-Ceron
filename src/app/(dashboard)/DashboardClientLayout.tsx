@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/appointments",   label: "Citas",            icon: CalendarDays,   roles: ["administrador", "odontologo"] },
   { href: "/finance",        label: "Finanzas",         icon: DollarSign,     roles: ["administrador", "odontologo"] },
   { href: "/inventory",      label: "Inventario",       icon: Package,        roles: ["administrador"] },
+  { href: "/staff",          label: "Personal",         icon: Stethoscope,    roles: ["administrador"] },
   { href: "/reports",        label: "Reportes",         icon: BarChart3,      roles: ["administrador"] },
   { href: "/communications", label: "Comunicaciones",   icon: MessageSquare,  roles: ["administrador"] },
   { href: "/trash",          label: "Papelera",         icon: Trash2,         roles: ["administrador"] },

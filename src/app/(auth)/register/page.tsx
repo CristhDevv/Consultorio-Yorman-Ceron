@@ -115,21 +115,7 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="role" className="text-xs font-semibold text-muted-foreground">
-            Rol en el Sistema
-          </label>
-          <select
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-          >
-            <option value="paciente">Paciente</option>
-            <option value="odontologo">Odontólogo</option>
-            <option value="administrador">Administrador</option>
-          </select>
-        </div>
+        {/* El rol en el registro público siempre es estrictamente paciente por seguridad */}
 
         <Button
           type="submit"
