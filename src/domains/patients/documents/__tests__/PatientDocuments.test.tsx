@@ -8,6 +8,8 @@ describe('PatientDocuments Component', () => {
   const mockOnUpload = vi.fn();
   const mockOnGetSignedUrl = vi.fn();
   const mockOnDelete = vi.fn();
+  const mockOnGetDeletedDocuments = vi.fn();
+  const mockOnRestore = vi.fn();
 
   const initialDocuments = [
     {
@@ -32,6 +34,8 @@ describe('PatientDocuments Component', () => {
         onUpload={mockOnUpload}
         onGetSignedUrl={mockOnGetSignedUrl}
         onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
       />
     );
 
@@ -47,6 +51,8 @@ describe('PatientDocuments Component', () => {
         onUpload={mockOnUpload}
         onGetSignedUrl={mockOnGetSignedUrl}
         onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
       />
     );
 
@@ -72,6 +78,8 @@ describe('PatientDocuments Component', () => {
         onUpload={mockOnUpload}
         onGetSignedUrl={mockOnGetSignedUrl}
         onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
       />
     );
 
@@ -102,6 +110,8 @@ describe('PatientDocuments Component', () => {
         onUpload={mockOnUpload}
         onGetSignedUrl={mockOnGetSignedUrl}
         onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
       />
     );
 
@@ -133,6 +143,8 @@ describe('PatientDocuments Component', () => {
         onUpload={mockOnUpload}
         onGetSignedUrl={mockOnGetSignedUrl}
         onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
       />
     );
 
@@ -149,5 +161,241 @@ describe('PatientDocuments Component', () => {
 
     // Error message should be rendered under document info
     expect(await screen.findByText('No se pudo eliminar el archivo')).toBeInTheDocument();
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Nuevos tests para la funcionalidad de Papelera y Restaurar (8 tests)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  it('6. should render the Papelera button if canDelete is true', () => {
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /Papelera/i })).toBeInTheDocument();
+  });
+
+  it('7. clicking Papelera button should open the dialog and trigger onGetDeletedDocuments with patientId', async () => {
+    mockOnGetDeletedDocuments.mockResolvedValue({ success: true, data: [] });
+
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    const trashBtn = screen.getByRole('button', { name: /Papelera/i });
+    fireEvent.click(trashBtn);
+
+    expect(screen.getByText('Documentos Eliminados')).toBeInTheDocument();
+    expect(mockOnGetDeletedDocuments).toHaveBeenCalledWith('patient-1');
+  });
+
+  it('8. should display loading message while fetching deleted documents', async () => {
+    // Retorna una promesa pendiente para evaluar el estado loading
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolvePromise: any;
+    const pendingPromise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+    mockOnGetDeletedDocuments.mockReturnValue(pendingPromise);
+
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Papelera/i }));
+    expect(screen.getByText('Cargando papelera…')).toBeInTheDocument();
+
+    // Limpieza
+    resolvePromise({ success: true, data: [] });
+  });
+
+  it('9. should display error message if fetching deleted documents fails', async () => {
+    mockOnGetDeletedDocuments.mockResolvedValue({ success: false, error: 'Fallo al conectar con el servidor' });
+
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Papelera/i }));
+
+    expect(await screen.findByText(/Fallo al conectar con el servidor/i)).toBeInTheDocument();
+  });
+
+  it('10. should show empty state message if no deleted documents are returned', async () => {
+    mockOnGetDeletedDocuments.mockResolvedValue({ success: true, data: [] });
+
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Papelera/i }));
+
+    expect(await screen.findByText('No hay documentos en la papelera.')).toBeInTheDocument();
+  });
+
+  it('11. should render deleted documents list when fetched successfully', async () => {
+    const deletedDocs = [
+      {
+        id: 'del-1',
+        document_type: 'Radiografía',
+        file_name: 'rx_borrada.png',
+        file_path: 'patient-1/rx_borrada.png',
+        created_at: '2026-07-26T12:00:00Z',
+        deleted_at: '2026-08-01T12:00:00Z',
+        deleted_by: 'admin-1',
+        deleted_by_name: 'Dr. Administrador',
+      },
+    ];
+    mockOnGetDeletedDocuments.mockResolvedValue({ success: true, data: deletedDocs });
+
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Papelera/i }));
+
+    expect(await screen.findByText('rx_borrada.png')).toBeInTheDocument();
+    expect(screen.getAllByText('Radiografía')[0]).toBeInTheDocument();
+    expect(screen.getByText(/por Dr. Administrador/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Restaurar' })).toBeInTheDocument();
+  });
+
+  it('12. should handle successful restore and remove document from list', async () => {
+    const deletedDocs = [
+      {
+        id: 'del-1',
+        document_type: 'Radiografía',
+        file_name: 'rx_borrada.png',
+        file_path: 'patient-1/rx_borrada.png',
+        created_at: '2026-07-26T12:00:00Z',
+        deleted_at: '2026-08-01T12:00:00Z',
+        deleted_by: 'admin-1',
+        deleted_by_name: 'Dr. Administrador',
+      },
+    ];
+    mockOnGetDeletedDocuments.mockResolvedValue({ success: true, data: deletedDocs });
+    mockOnRestore.mockResolvedValue({ success: true, data: null });
+
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Papelera/i }));
+
+    const restoreBtn = await screen.findByRole('button', { name: 'Restaurar' });
+    fireEvent.click(restoreBtn);
+
+    await waitFor(() => {
+      expect(mockOnRestore).toHaveBeenCalledWith('del-1');
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('rx_borrada.png')).not.toBeInTheDocument();
+    });
+  });
+
+  it('13. should display error message next to the document if restoring fails', async () => {
+    const deletedDocs = [
+      {
+        id: 'del-1',
+        document_type: 'Radiografía',
+        file_name: 'rx_borrada.png',
+        file_path: 'patient-1/rx_borrada.png',
+        created_at: '2026-07-26T12:00:00Z',
+        deleted_at: '2026-08-01T12:00:00Z',
+        deleted_by: 'admin-1',
+        deleted_by_name: 'Dr. Administrador',
+      },
+    ];
+    mockOnGetDeletedDocuments.mockResolvedValue({ success: true, data: deletedDocs });
+    mockOnRestore.mockResolvedValue({ success: false, error: 'Error al restaurar archivo' });
+
+    render(
+      <PatientDocuments
+        patientId="patient-1"
+        initialDocuments={initialDocuments}
+        canDelete={true}
+        onUpload={mockOnUpload}
+        onGetSignedUrl={mockOnGetSignedUrl}
+        onDelete={mockOnDelete}
+        onGetDeletedDocuments={mockOnGetDeletedDocuments}
+        onRestore={mockOnRestore}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Papelera/i }));
+
+    const restoreBtn = await screen.findByRole('button', { name: 'Restaurar' });
+    fireEvent.click(restoreBtn);
+
+    await waitFor(() => {
+      expect(mockOnRestore).toHaveBeenCalledWith('del-1');
+    });
+
+    expect(await screen.findByText('Error al restaurar archivo')).toBeInTheDocument();
+    expect(screen.getByText('rx_borrada.png')).toBeInTheDocument(); // Sigue en la lista
   });
 });

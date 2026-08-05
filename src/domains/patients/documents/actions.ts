@@ -309,13 +309,176 @@ export async function deletePatientDocument(
   // — Soft-delete: marcar la fila como eliminada en patient_documents ───────
   const { error: deleteError } = await supabase
     .from("patient_documents")
-    .update({ deleted_at: new Date().toISOString() })
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: user.id,
+    })
     .eq("id", documentId)
 
   if (deleteError) {
     return {
       success: false,
       error: `No se pudo marcar el documento como eliminado: ${deleteError.message}.`,
+    }
+  }
+
+  revalidatePath(`/patients/${patientId}`)
+
+  return { success: true, data: null }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. getDeletedPatientDocuments
+// ═══════════════════════════════════════════════════════════════════════════
+export async function getDeletedPatientDocuments(
+  patientId: string
+): Promise<ActionResult<Array<{
+  id: string
+  document_type: string
+  file_name: string
+  file_path: string
+  uploaded_by: string
+  created_at: string
+  bucket_id: string
+  deleted_at: string | null
+  deleted_by: string | null
+  deleted_by_name: string | null
+}>>> {
+  const supabase = await createClient()
+
+  // — Validar sesión ────────────────────────────────────────────────────────
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // — Validar rol de administrador en tiempo real ──────────────────────────
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || profile?.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden consultar documentos eliminados.",
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("patient_documents")
+    .select("id, document_type, file_name, file_path, uploaded_by, created_at, bucket_id, deleted_at, deleted_by")
+    .eq("patient_id", patientId)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false })
+
+  if (error) {
+    return {
+      success: false,
+      error: `No se pudieron obtener los documentos eliminados: ${error.message}`,
+    }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: true, data: [] }
+  }
+
+  // — Resolver nombres de perfiles evitando IN vacío ─────────────────────────
+  const adminIds = Array.from(new Set(data.map(d => d.deleted_by).filter((id): id is string => !!id)))
+
+  let profileMap = new Map<string, string | null>()
+  if (adminIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", adminIds)
+
+    profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) ?? [])
+  }
+
+  // — Mapear y retornar con tipo de retorno explícito ────────────────────────
+  const mappedData = data.map(d => ({
+    id: d.id,
+    document_type: d.document_type,
+    file_name: d.file_name,
+    file_path: d.file_path,
+    uploaded_by: d.uploaded_by,
+    created_at: d.created_at,
+    bucket_id: d.bucket_id,
+    deleted_at: d.deleted_at,
+    deleted_by: d.deleted_by,
+    deleted_by_name: d.deleted_by ? (profileMap.get(d.deleted_by) ?? null) : null
+  }))
+
+  return { success: true, data: mappedData }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. restorePatientDocument
+// ═══════════════════════════════════════════════════════════════════════════
+export async function restorePatientDocument(
+  documentId: string,
+  patientId: string
+): Promise<ActionResult<null>> {
+  const supabase = await createClient()
+
+  // — Validar sesión ────────────────────────────────────────────────────────
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // — Validar rol de administrador en tiempo real ──────────────────────────
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || profile?.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden restaurar documentos.",
+    }
+  }
+
+  // — Verificar existencia del documento eliminado ─────────────────────────
+  const { data: docRow, error: fetchError } = await supabase
+    .from("patient_documents")
+    .select("id")
+    .eq("id", documentId)
+    .not("deleted_at", "is", null)
+    .single()
+
+  if (fetchError || !docRow) {
+    return {
+      success: false,
+      error: "El documento no existe o no está en la papelera para ser restaurado.",
+    }
+  }
+
+  // — Restaurar documento: null en deleted_at, registrar restored_at ────────
+  const { error: updateError } = await supabase
+    .from("patient_documents")
+    .update({
+      deleted_at: null,
+      restored_at: new Date().toISOString(),
+    })
+    .eq("id", documentId)
+
+  if (updateError) {
+    return {
+      success: false,
+      error: `No se pudo restaurar el documento: ${updateError.message}.`,
     }
   }
 

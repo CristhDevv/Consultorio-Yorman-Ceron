@@ -245,33 +245,39 @@ export type Database = {
           bucket_id: string
           created_at: string
           deleted_at: string | null
+          deleted_by: string | null
           document_type: string
           file_name: string
           file_path: string
           id: string
           patient_id: string
+          restored_at: string | null
           uploaded_by: string
         }
         Insert: {
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string | null
           document_type: string
           file_name: string
           file_path: string
           id?: string
           patient_id: string
+          restored_at?: string | null
           uploaded_by: string
         }
         Update: {
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
+          deleted_by?: string | null
           document_type?: string
           file_name?: string
           file_path?: string
           id?: string
           patient_id?: string
+          restored_at?: string | null
           uploaded_by?: string
         }
         Relationships: [

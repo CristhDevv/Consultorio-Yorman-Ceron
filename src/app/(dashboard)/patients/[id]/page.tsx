@@ -9,6 +9,8 @@ import {
   uploadPatientDocument,
   getDocumentSignedUrl,
   deletePatientDocument,
+  getDeletedPatientDocuments,
+  restorePatientDocument,
 } from "@/domains/patients/documents/actions"
 import PatientDocuments from "@/domains/patients/documents/components/PatientDocuments"
 import PaymentHistoryView from "@/domains/finance/components/PaymentHistoryView"
@@ -70,6 +72,16 @@ export default async function PatientDetailPage({ params }: PageProps) {
     return deletePatientDocument(documentId, id)
   }
 
+  async function handleGetDeletedDocuments() {
+    "use server"
+    return getDeletedPatientDocuments(id)
+  }
+
+  async function handleRestore(documentId: string) {
+    "use server"
+    return restorePatientDocument(documentId, id)
+  }
+
   // — Server Action wrapper para el odontograma (sin cambios) ───────────────
   async function handleOdontogramSubmit(data: {
     tooth_number: number
@@ -114,6 +126,8 @@ export default async function PatientDetailPage({ params }: PageProps) {
         onUpload={handleUpload}
         onGetSignedUrl={handleGetSignedUrl}
         onDelete={handleDelete}
+        onGetDeletedDocuments={handleGetDeletedDocuments}
+        onRestore={handleRestore}
       />
 
       {/* Historial Financiero Consolidado */}

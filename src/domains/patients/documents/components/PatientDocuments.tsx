@@ -29,6 +29,17 @@ interface DocumentRow {
   created_at: string
 }
 
+interface DeletedDocumentRow {
+  id: string
+  document_type: string
+  file_name: string
+  file_path: string
+  created_at: string
+  deleted_at: string | null
+  deleted_by: string | null
+  deleted_by_name: string | null
+}
+
 interface PatientDocumentsProps {
   patientId: string
   initialDocuments: DocumentRow[]
@@ -36,6 +47,8 @@ interface PatientDocumentsProps {
   onUpload: (formData: FormData) => Promise<ActionResult<{ id: string; file_path: string }>>
   onGetSignedUrl: (filePath: string) => Promise<ActionResult<{ signedUrl: string }>>
   onDelete: (documentId: string) => Promise<ActionResult<null>>
+  onGetDeletedDocuments: (patientId: string) => Promise<ActionResult<DeletedDocumentRow[]>>
+  onRestore: (documentId: string) => Promise<ActionResult<null>>
 }
 
 // ─── Utilidad: formatear fecha legible ──────────────────────────────────────
@@ -63,6 +76,8 @@ export default function PatientDocuments({
   onUpload,
   onGetSignedUrl,
   onDelete,
+  onGetDeletedDocuments,
+  onRestore,
 }: PatientDocumentsProps) {
   // — Estado del formulario de subida ─────────────────────────────────────
   const [documentType, setDocumentType] = useState("")
@@ -81,6 +96,19 @@ export default function PatientDocuments({
   // — Estado de "Eliminar" por documento ───────────────────────────────────
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({})
   const [deleteLoading, setDeleteLoading] = useState<Record<string, boolean>>({})
+
+  // — Estado de confirmación de eliminación ───────────────────────────────
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  // — Estados de la papelera ───────────────────────────────────────────────
+  const [isTrashOpen, setIsTrashOpen] = useState(false)
+  const [deletedDocs, setDeletedDocs] = useState<DeletedDocumentRow[]>([])
+  const [trashLoading, setTrashLoading] = useState(false)
+  const [trashError, setTrashError] = useState<string | null>(null)
+
+  // — Estados individuales de restauración ─────────────────────────────────
+  const [restoreLoading, setRestoreLoading] = useState<Record<string, boolean>>({})
+  const [restoreErrors, setRestoreErrors] = useState<Record<string, string>>({})
 
   // — Manejador: subir documento ────────────────────────────────────────────
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
@@ -132,9 +160,6 @@ export default function PatientDocuments({
     }
   }
 
-  // — Estado de confirmación de eliminación ───────────────────────────────
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-
   // — Manejador: eliminar documento ─────────────────────────────────────────
   function handleDelete(docId: string) {
     setConfirmDeleteId(docId)
@@ -157,16 +182,59 @@ export default function PatientDocuments({
     }
   }
 
+  // — Manejador: abrir y cargar papelera ────────────────────────────────────
+  async function handleOpenTrash() {
+    setIsTrashOpen(true)
+    setTrashLoading(true)
+    setTrashError(null)
+
+    const result = await onGetDeletedDocuments(patientId)
+
+    setTrashLoading(false)
+    if (result.success) {
+      setDeletedDocs(result.data)
+    } else {
+      setTrashError(result.error)
+    }
+  }
+
+  // — Manejador: restaurar documento ────────────────────────────────────────
+  async function handleRestore(docId: string) {
+    setRestoreLoading((prev) => ({ ...prev, [docId]: true }))
+    setRestoreErrors((prev) => ({ ...prev, [docId]: "" }))
+
+    const result = await onRestore(docId)
+
+    setRestoreLoading((prev) => ({ ...prev, [docId]: false }))
+
+    if (result.success) {
+      setDeletedDocs((prev) => prev.filter((d) => d.id !== docId))
+    } else {
+      setRestoreErrors((prev) => ({ ...prev, [docId]: result.error }))
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
       {/* ── Lista de documentos ──────────────────────────────────────────── */}
       <Card className="bg-slate-900 border-slate-800 text-slate-100">
-        <CardHeader>
-          <CardTitle className="text-white text-lg">Documentos Adjuntos</CardTitle>
-          <CardDescription className="text-slate-400">
-            Archivos clínicos y administrativos vinculados al paciente.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div className="flex flex-col gap-1.5">
+            <CardTitle className="text-white text-lg">Documentos Adjuntos</CardTitle>
+            <CardDescription className="text-slate-400">
+              Archivos clínicos y administrativos vinculados al paciente.
+            </CardDescription>
+          </div>
+          {canDelete && (
+            <Button
+              id="btn-abrir-papelera"
+              variant="outline"
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-cyan-400 hover:border-cyan-500/30 text-xs h-8 px-3 transition-all"
+              onClick={handleOpenTrash}
+            >
+              Papelera
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {initialDocuments.length === 0 ? (
@@ -177,7 +245,7 @@ export default function PatientDocuments({
             <ul className="flex flex-col gap-3">
               {initialDocuments.map((doc) => (
                 <li
-                   key={doc.id}
+                  key={doc.id}
                   className="bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                 >
                   {/* Información del documento */}
@@ -331,6 +399,87 @@ export default function PatientDocuments({
               onClick={handleConfirmDelete}
             >
               Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de la papelera */}
+      <Dialog open={isTrashOpen} onOpenChange={(open) => { if (!open) setIsTrashOpen(false) }}>
+        <DialogContent id="modal-papelera" className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white">Documentos Eliminados</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Historial de archivos borrados. Puedes restaurar cualquier documento de esta lista.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="my-4">
+            {trashLoading && (
+              <div className="text-center py-8 text-sm text-slate-400">
+                Cargando papelera…
+              </div>
+            )}
+
+            {trashError && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg px-3 py-2 text-sm">
+                ✗ {trashError}
+              </div>
+            )}
+
+            {!trashLoading && !trashError && deletedDocs.length === 0 && (
+              <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 text-sm text-slate-400 text-center">
+                No hay documentos en la papelera.
+              </div>
+            )}
+
+            {!trashLoading && !trashError && deletedDocs.length > 0 && (
+              <ul className="flex flex-col gap-3 max-h-96 overflow-y-auto pr-1">
+                {deletedDocs.map((doc) => (
+                  <li
+                    key={doc.id}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-white text-sm font-semibold truncate">
+                        {doc.file_name}
+                      </span>
+                      <span className="text-xs text-cyan-400 font-medium">
+                        {doc.document_type}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        Eliminado el {formatDate(doc.deleted_at || "")} por {doc.deleted_by_name ?? "Administrador desconocido"}
+                      </span>
+                      {restoreErrors[doc.id] && (
+                        <span className="text-xs text-red-400 mt-1">
+                          {restoreErrors[doc.id]}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center shrink-0">
+                      <Button
+                        id={`btn-restaurar-doc-${doc.id}`}
+                        variant="outline"
+                        className="border-emerald-900/50 text-emerald-400 hover:bg-emerald-950 hover:text-emerald-300 hover:border-emerald-500/30 text-xs h-8 px-3 transition-all"
+                        disabled={!!restoreLoading[doc.id]}
+                        onClick={() => handleRestore(doc.id)}
+                      >
+                        {restoreLoading[doc.id] ? "Restaurando…" : "Restaurar"}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              onClick={() => setIsTrashOpen(false)}
+            >
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>
