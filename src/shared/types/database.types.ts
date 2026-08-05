@@ -290,6 +290,56 @@ export type Database = {
           },
         ]
       }
+      patient_images: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          id: string
+          image_type: string
+          patient_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          bucket_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          image_type: string
+          patient_id: string
+          uploaded_by: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          image_type?: string
+          patient_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_images_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_payments: {
         Row: {
           amount: number

@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { deletePatientDocument, getDocumentSignedUrl, getDeletedPatientDocuments, restorePatientDocument } from '../actions';
+import { deletePatientDocument, getDocumentSignedUrl, getDeletedPatientDocuments, restorePatientDocument, getAllDeletedDocuments } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -901,5 +901,117 @@ describe('restorePatientDocument', () => {
     });
     expect(mockEqUpdate).toHaveBeenCalledWith('id', DOCUMENT_ID);
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe('getAllDeletedDocuments', () => {
+  let mockSupabase: MockSupabase;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockSupabase = {
+      auth: {
+        getUser: vi.fn(),
+      },
+      from: vi.fn(),
+      storage: {
+        from: vi.fn(),
+      },
+    };
+
+    vi.mocked(createClient).mockResolvedValue(
+      mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>
+    );
+
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: AUTHENTICATED_USER },
+      error: null,
+    });
+  });
+
+  it('1. should fail if no active session', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    const result = await getAllDeletedDocuments();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('inicia sesión');
+  });
+
+  it('2. should fail if user is not administrator', async () => {
+    mockSupabase.from.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: { role: 'odontologo' }, error: null }),
+        }),
+      }),
+    });
+
+    const result = await getAllDeletedDocuments();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('administradores');
+  });
+
+  it('3. should succeed and return joined data', async () => {
+    const deletedDocs = [
+      {
+        id: 'doc-1',
+        document_type: 'Consentimiento',
+        file_name: 'consent.pdf',
+        file_path: 'patient-1/consent.pdf',
+        uploaded_by: 'user-admin-001',
+        created_at: '2026-08-05T12:00:00Z',
+        bucket_id: 'patient-attachments',
+        deleted_at: '2026-08-05T12:30:00Z',
+        deleted_by: 'user-admin-001',
+        patient_id: 'patient-1',
+        patients: {
+          full_name: 'Juan Pérez',
+        },
+      },
+    ];
+
+    // Profiles mock for resolved deleted_by_name
+    const mockProfilesIn = vi.fn().mockResolvedValue({ data: [{ id: 'user-admin-001', full_name: 'Dr. Yorman Cerón' }], error: null });
+
+    // Documents query mock
+    const mockOrder = vi.fn().mockResolvedValue({ data: deletedDocs, error: null });
+    const mockNot = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockSelect = vi.fn().mockReturnValue({ not: mockNot });
+
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: (query: string) => {
+            if (query === 'role') {
+              return { eq: () => ({ single: () => Promise.resolve({ data: { role: 'administrador' }, error: null }) }) };
+            }
+            return { in: mockProfilesIn };
+          }
+        };
+      }
+      if (tableName === 'patient_documents') {
+        return { select: mockSelect };
+      }
+      return {};
+    });
+
+    const result = await getAllDeletedDocuments();
+    expect(result.success).toBe(true);
+    expect(result.data).toHaveLength(1);
+    expect(result.data?.[0]).toEqual({
+      id: 'doc-1',
+      document_type: 'Consentimiento',
+      file_name: 'consent.pdf',
+      file_path: 'patient-1/consent.pdf',
+      uploaded_by: 'user-admin-001',
+      created_at: '2026-08-05T12:00:00Z',
+      bucket_id: 'patient-attachments',
+      deleted_at: '2026-08-05T12:30:00Z',
+      deleted_by: 'user-admin-001',
+      deleted_by_name: 'Dr. Yorman Cerón',
+      patient_id: 'patient-1',
+      patient_name: 'Juan Pérez',
+    });
   });
 });

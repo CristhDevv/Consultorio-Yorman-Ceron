@@ -486,3 +486,117 @@ export async function restorePatientDocument(
 
   return { success: true, data: null }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 7. getAllDeletedDocuments
+// ═══════════════════════════════════════════════════════════════════════════
+export async function getAllDeletedDocuments(): Promise<
+  ActionResult<
+    Array<{
+      id: string
+      document_type: string
+      file_name: string
+      file_path: string
+      uploaded_by: string
+      created_at: string
+      bucket_id: string
+      deleted_at: string
+      deleted_by: string
+      deleted_by_name: string | null
+      patient_id: string
+      patient_name: string
+    }>
+  >
+> {
+  const supabase = await createClient()
+
+  // — Validar sesión ────────────────────────────────────────────────────────
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // — Validar rol de administrador en tiempo real ──────────────────────────
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || profile?.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden consultar la papelera global.",
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("patient_documents")
+    .select(`
+      id,
+      document_type,
+      file_name,
+      file_path,
+      uploaded_by,
+      created_at,
+      bucket_id,
+      deleted_at,
+      deleted_by,
+      patient_id,
+      patients (
+        full_name
+      )
+    `)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false })
+
+  if (error) {
+    return {
+      success: false,
+      error: `No se pudieron obtener los documentos eliminados: ${error.message}`,
+    }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: true, data: [] }
+  }
+
+  // Resolver nombres de perfiles
+  const adminIds = Array.from(new Set(data.map(d => d.deleted_by).filter((id): id is string => !!id)))
+
+  let profileMap = new Map<string, string | null>()
+  if (adminIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", adminIds)
+
+    profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) ?? [])
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mappedData = data.map((d: any) => {
+    const patientName = d.patients?.full_name || "Paciente desconocido"
+    return {
+      id: d.id,
+      document_type: d.document_type,
+      file_name: d.file_name,
+      file_path: d.file_path,
+      uploaded_by: d.uploaded_by,
+      created_at: d.created_at,
+      bucket_id: d.bucket_id,
+      deleted_at: d.deleted_at,
+      deleted_by: d.deleted_by,
+      deleted_by_name: d.deleted_by ? (profileMap.get(d.deleted_by) ?? null) : null,
+      patient_id: d.patient_id,
+      patient_name: patientName,
+    }
+  })
+
+  return { success: true, data: mappedData }
+}
+
