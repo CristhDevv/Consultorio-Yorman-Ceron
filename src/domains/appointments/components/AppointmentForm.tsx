@@ -148,7 +148,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Columna Izquierda: Selección de Paciente, Odontólogo y Fecha */}
         <div className="flex flex-col gap-6">
-          <Card className="bg-white border-border text-foreground shadow-sm">
+          <Card className="bg-white border-border text-foreground shadow-sm overflow-visible">
             <CardHeader>
               <CardTitle className="text-foreground text-lg font-bold">Paso 1: Paciente y Profesional</CardTitle>
               <CardDescription className="text-muted-foreground">

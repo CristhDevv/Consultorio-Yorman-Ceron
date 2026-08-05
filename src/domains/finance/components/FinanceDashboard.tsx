@@ -51,7 +51,7 @@ export default function FinanceDashboard({ patients }: FinanceDashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Selector de Paciente */}
         <div className="md:col-span-1 flex flex-col gap-4">
-          <Card className="bg-white border-border text-foreground shadow-sm">
+          <Card className="bg-white border-border text-foreground shadow-sm overflow-visible">
             <CardHeader>
               <CardTitle className="text-foreground text-lg font-bold">Buscar Paciente</CardTitle>
               <CardDescription className="text-muted-foreground">
