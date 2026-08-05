@@ -9,6 +9,7 @@ vi.mock("@/shared/lib/supabase/server", () => ({
 interface MockSupabase {
   auth: { getUser: ReturnType<typeof vi.fn> }
   from: ReturnType<typeof vi.fn>
+  rpc: ReturnType<typeof vi.fn>
 }
 
 describe("Communications Actions", () => {
@@ -25,6 +26,7 @@ describe("Communications Actions", () => {
         }),
       },
       from: vi.fn(),
+      rpc: vi.fn(),
     }
 
     vi.mocked(createClient).mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>)
@@ -220,26 +222,6 @@ describe("Communications Actions", () => {
         error: null,
       })
 
-      const mockLogs = [
-        {
-          patient_id: "pat-1",
-          patients: { id: "pat-1", full_name: "Juan Pérez" },
-        },
-        {
-          patient_id: "pat-1",
-          patients: { id: "pat-1", full_name: "Juan Pérez" },
-        },
-        {
-          patient_id: "pat-2",
-          patients: { id: "pat-2", full_name: "María Gómez" },
-        },
-      ]
-
-      const mockSelectLogs = vi.fn().mockResolvedValue({
-        data: mockLogs,
-        error: null,
-      })
-
       mockSupabase.from.mockImplementation((table) => {
         if (table === "profiles") {
           return {
@@ -247,23 +229,26 @@ describe("Communications Actions", () => {
             eq: vi.fn().mockReturnValue({ single: mockSingle }),
           }
         }
-        if (table === "communication_logs") {
-          return {
-            select: mockSelectLogs,
-          }
-        }
         return {}
+      })
+
+      const mockRPCData = [
+        { id: "pat-1", full_name: "Juan Pérez" },
+        { id: "pat-2", full_name: "María Gómez" },
+      ]
+
+      mockSupabase.rpc.mockResolvedValue({
+        data: mockRPCData,
+        error: null,
       })
 
       const result = await getPatientsWithCommunicationLogs()
 
+      expect(mockSupabase.rpc).toHaveBeenCalledWith("get_unique_patients_with_logs")
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data).toHaveLength(2)
-        expect(result.data).toEqual([
-          { id: "pat-1", full_name: "Juan Pérez" },
-          { id: "pat-2", full_name: "María Gómez" },
-        ])
+        expect(result.data).toEqual(mockRPCData)
       }
     })
   })

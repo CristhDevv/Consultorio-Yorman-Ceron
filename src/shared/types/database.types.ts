@@ -502,6 +502,13 @@ export type Database = {
         }
         Returns: string
       }
+      get_unique_patients_with_logs: {
+        Args: never
+        Returns: {
+          id: string
+          full_name: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_odontologo: { Args: never; Returns: boolean }
       register_inventory_movement: {

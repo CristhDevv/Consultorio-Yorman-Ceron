@@ -26,6 +26,12 @@ export interface AppointmentInput {
 export async function getAppointments() {
   const supabase = await createClient()
 
+  // Para evitar sobrecarga en la base de datos a largo plazo, acotamos
+  // la búsqueda a partir de 90 días atrás.
+  const ninetyDaysAgo = new Date()
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+  const dateLimit = ninetyDaysAgo.toISOString()
+
   const { data, error } = await supabase
     .from("appointments")
     .select(`
@@ -40,6 +46,7 @@ export async function getAppointments() {
         full_name
       )
     `)
+    .gte("starts_at", dateLimit)
     .order("starts_at")
 
   if (error) {
@@ -155,11 +162,13 @@ export async function createAppointment(input: AppointmentInput) {
           day: "numeric",
           month: "long",
           year: "numeric",
+          timeZone: "UTC",
         })
         formattedTime = dateObj.toLocaleTimeString("es-CO", {
           hour: "2-digit",
           minute: "2-digit",
           hour12: false,
+          timeZone: "UTC",
         })
       } catch {
         formattedDate = apptWithDetails.starts_at
@@ -297,11 +306,13 @@ export async function updateAppointment(id: string, input: Partial<AppointmentIn
           day: "numeric",
           month: "long",
           year: "numeric",
+          timeZone: "UTC",
         })
         formattedTime = dateObj.toLocaleTimeString("es-CO", {
           hour: "2-digit",
           minute: "2-digit",
           hour12: false,
+          timeZone: "UTC",
         })
       } catch {
         formattedDate = apptWithDetails.starts_at

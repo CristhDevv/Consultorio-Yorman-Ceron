@@ -235,6 +235,7 @@ export async function getCommunicationLogs(
 /**
  * Retrieves unique list of patients who have at least one communication log.
  * Requires active session and administrator role.
+ * Optimized using database-level RPC to prevent scaling memory issues on server.
  */
 export async function getPatientsWithCommunicationLogs(): Promise<
   ActionResult<PatientWithLogs[]>
@@ -265,36 +266,19 @@ export async function getPatientsWithCommunicationLogs(): Promise<
     }
   }
 
-  // 3. Query patients from logs
+  // 3. Query unique patients from logs using RPC
   const { data, error: queryError } = await supabase
-    .from("communication_logs")
-    .select(`
-      patient_id,
-      patients (
-        id,
-        full_name
-      )
-    `)
+    .rpc("get_unique_patients_with_logs")
 
   if (queryError) {
     return { success: false, error: queryError.message }
   }
 
-  const patientMap = new Map<string, string>()
-  for (const log of data || []) {
-    const patient = log.patients as { id: string; full_name: string } | null
-    if (patient && patient.id && patient.full_name) {
-      patientMap.set(patient.id, patient.full_name)
-    }
-  }
+  const resultList = (data as unknown as { id: string; full_name: string }[] || []).map((row) => ({
+    id: row.id,
+    full_name: row.full_name,
+  }))
 
-  const uniquePatients: PatientWithLogs[] = Array.from(patientMap.entries()).map(
-    ([id, full_name]) => ({
-      id,
-      full_name,
-    })
-  )
-
-  return { success: true, data: uniquePatients }
+  return { success: true, data: resultList }
 }
 
