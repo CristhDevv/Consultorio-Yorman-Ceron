@@ -147,7 +147,7 @@ export default function AppointmentEditForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-4xl mx-auto">
       {errorMsg && (
-        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-200">
+        <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-750">
           <AlertTitle>Error al guardar los cambios</AlertTitle>
           <AlertDescription>{errorMsg}</AlertDescription>
         </Alert>
@@ -156,26 +156,26 @@ export default function AppointmentEditForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Columna Izquierda */}
         <div className="flex flex-col gap-6">
-          <Card className="bg-slate-900 border-slate-800 text-slate-100">
+          <Card className="bg-white border-border text-foreground shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Paciente y Profesional</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-foreground text-lg font-bold">Paciente y Profesional</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 El paciente no es modificable en este formulario.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               {/* Paciente — solo referencia visual, no editable */}
               <div className="flex flex-col gap-1.5">
-                <Label className="text-slate-300 font-medium">Paciente</Label>
-                <div className="flex items-center gap-3 p-3 bg-slate-950/50 border border-slate-800/50 rounded-lg opacity-70">
-                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 text-xs font-bold shrink-0">
+                <Label className="text-foreground font-medium">Paciente</Label>
+                <div className="flex items-center gap-3 p-3 bg-muted/15 border border-border rounded-lg opacity-85">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-bold shrink-0">
                     {patient.full_name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-white text-sm">{patient.full_name}</p>
-                    <p className="text-xs text-slate-400">Doc: {patient.document_id}</p>
+                    <p className="font-semibold text-foreground text-sm">{patient.full_name}</p>
+                    <p className="text-xs text-muted-foreground">Doc: {patient.document_id}</p>
                   </div>
-                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-800 px-2 py-0.5 rounded">
+                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded">
                     Fijo
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export default function AppointmentEditForm({
 
               {/* Odontólogo — editable */}
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dentist" className="text-slate-300 font-medium">Odontólogo *</Label>
+                <Label htmlFor="dentist" className="text-foreground font-medium">Odontólogo *</Label>
                 <select
                   id="dentist"
                   value={selectedDentistId}
@@ -191,7 +191,7 @@ export default function AppointmentEditForm({
                     setSelectedDentistId(e.target.value)
                     setSelectedSlot(null)
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
+                  className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
                 >
                   <option value="" disabled>Seleccione un odontólogo...</option>
                   {dentists.map(d => (
@@ -204,7 +204,7 @@ export default function AppointmentEditForm({
 
               {/* Fecha — editable */}
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="date" className="text-slate-300 font-medium">Fecha de la Cita *</Label>
+                <Label htmlFor="date" className="text-foreground font-medium">Fecha de la Cita *</Label>
                 <Input
                   id="date"
                   type="date"
@@ -214,7 +214,7 @@ export default function AppointmentEditForm({
                     setSelectedDate(e.target.value)
                     setSelectedSlot(null)
                   }}
-                  className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500 text-sm"
+                  className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm"
                 />
               </div>
             </CardContent>
@@ -223,25 +223,25 @@ export default function AppointmentEditForm({
 
         {/* Columna Derecha: Selección de Horario */}
         <div className="flex flex-col gap-6">
-          <Card className="bg-slate-900 border-slate-800 text-slate-100 h-full flex flex-col">
+          <Card className="bg-white border-border text-foreground h-full flex flex-col shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Horarios Disponibles</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-foreground text-lg font-bold">Horarios Disponibles</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 El horario actual aparece disponible y preseleccionado al cargar.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-center">
               {!selectedDentistId || !selectedDate ? (
-                <div className="text-center py-10 text-slate-500 text-sm border-2 border-dashed border-slate-800 rounded-xl">
+                <div className="text-center py-10 text-muted-foreground text-sm border-2 border-dashed border-border rounded-xl">
                   Selecciona odontólogo y fecha para ver los horarios disponibles.
                 </div>
               ) : loadingSlots ? (
-                <div className="flex flex-col items-center gap-3 py-10 text-slate-400">
-                  <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                <div className="flex flex-col items-center gap-3 py-10 text-muted-foreground">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   <p className="text-sm">Buscando bloques de tiempo disponibles...</p>
                 </div>
               ) : slots.length === 0 ? (
-                <div className="text-center py-10 text-amber-400/80 text-sm border border-amber-500/20 bg-amber-500/5 rounded-xl px-4">
+                <div className="text-center py-10 text-amber-700 text-sm border border-amber-250 bg-amber-50 rounded-xl px-4">
                   No hay horarios disponibles para esta fecha con el odontólogo seleccionado.
                 </div>
               ) : (
@@ -255,8 +255,8 @@ export default function AppointmentEditForm({
                         onClick={() => setSelectedSlot(slot)}
                         className={`py-2 px-3 text-xs font-semibold rounded-lg text-center transition-all ${
                           isSelected
-                            ? "bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/25 scale-[1.02]"
-                            : "bg-slate-950 border border-slate-800 text-slate-300 hover:border-cyan-500/50 hover:text-white"
+                            ? "bg-primary text-white font-bold shadow-xs scale-[1.02]"
+                            : "bg-white border border-border text-foreground hover:bg-muted"
                         }`}
                       >
                         {formatSlotTime(slot.starts_at)}
@@ -271,34 +271,34 @@ export default function AppointmentEditForm({
       </div>
 
       {/* Detalles Médicos — Motivo y Notas, habilitados siempre en edición */}
-      <Card className="bg-slate-900 border-slate-800 text-slate-100">
+      <Card className="bg-white border-border text-foreground shadow-sm">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Detalles Médicos</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-foreground text-lg font-bold">Detalles Médicos</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Motivo y observaciones de la consulta. Ambos campos son opcionales.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="reason" className="text-slate-300 font-medium">Motivo de la Cita</Label>
+            <Label htmlFor="reason" className="text-foreground font-medium">Motivo de la Cita</Label>
             <Input
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Ej: Limpieza dental, dolor de muela, calza..."
-              className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500 text-sm"
+              className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="notes" className="text-slate-300 font-medium">Notas / Observaciones</Label>
+            <Label htmlFor="notes" className="text-foreground font-medium">Notas / Observaciones</Label>
             <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Cualquier información complementaria útil..."
               rows={3}
-              className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
+              className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors placeholder-muted-foreground/60 resize-none"
             />
           </div>
         </CardContent>
@@ -310,14 +310,14 @@ export default function AppointmentEditForm({
           type="button"
           variant="outline"
           onClick={() => router.back()}
-          className="border-slate-800 text-slate-300 hover:bg-slate-800"
+          className="border-border text-foreground hover:bg-muted"
         >
           Cancelar
         </Button>
         <Button
           type="submit"
           disabled={submitting || !selectedDentistId || !selectedDate || !selectedSlot}
-          className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+          className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-xs"
         >
           {submitting ? "Guardando Cambios..." : "Guardar Cambios"}
         </Button>

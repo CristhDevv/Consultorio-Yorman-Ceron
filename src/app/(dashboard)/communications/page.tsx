@@ -43,10 +43,10 @@ export default async function CommunicationsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Historial de Comunicaciones</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Historial de Comunicaciones</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Registro de auditoría y seguimiento de correos y notificaciones automáticas enviadas a los pacientes.
         </p>
       </div>

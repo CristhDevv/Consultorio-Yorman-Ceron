@@ -57,26 +57,26 @@ export default function AppointmentStatusControl({ appointmentId, currentStatus 
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4 bg-slate-950 border border-slate-800 rounded-xl">
+    <div className="flex flex-col gap-3 p-4 bg-muted/20 border border-border rounded-xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <Label htmlFor="statusSelect" className="text-slate-300 font-semibold text-sm">Cambiar Estado Rápido</Label>
-          <span className="text-xs text-slate-500">Actualiza el estado de la cita instantáneamente.</span>
+          <Label htmlFor="statusSelect" className="text-foreground font-semibold text-sm">Cambiar Estado Rápido</Label>
+          <span className="text-xs text-muted-foreground">Actualiza el estado de la cita instantáneamente.</span>
         </div>
 
         <div className="flex items-center gap-3">
           {loading && (
-            <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           )}
           {success && (
-            <span className="text-xs font-semibold text-emerald-400">✓ Guardado</span>
+            <span className="text-xs font-semibold text-emerald-600">✓ Guardado</span>
           )}
           <select
             id="statusSelect"
             value={status}
             disabled={loading}
             onChange={handleStatusChange}
-            className="bg-slate-900 border border-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -88,7 +88,7 @@ export default function AppointmentStatusControl({ appointmentId, currentStatus 
       </div>
 
       {errorMsg && (
-        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-200 py-2.5">
+        <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-750 py-2.5">
           <AlertDescription className="text-xs">{errorMsg}</AlertDescription>
         </Alert>
       )}

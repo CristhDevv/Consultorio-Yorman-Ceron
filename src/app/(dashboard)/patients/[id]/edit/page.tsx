@@ -36,10 +36,10 @@ export default async function EditPatientPage({ params }: PageProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Editar Paciente</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Editar Paciente</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Modifica los antecedentes médicos o datos personales de la ficha.
         </p>
       </div>

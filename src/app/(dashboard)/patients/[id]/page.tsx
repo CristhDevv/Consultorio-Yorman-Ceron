@@ -138,8 +138,8 @@ export default async function PatientDetailPage({ params }: PageProps) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Expediente Médico</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Expediente Médico</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Historial y ficha clínica detallada de salud.
         </p>
       </div>
@@ -173,8 +173,8 @@ export default async function PatientDetailPage({ params }: PageProps) {
       />
 
       {/* Historial Financiero Consolidado */}
-      <div className="border-t border-slate-800 pt-6">
-        <h2 className="text-xl font-bold text-white mb-4">Expediente Financiero</h2>
+      <div className="border-t border-border pt-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">Expediente Financiero</h2>
         <PaymentHistoryView
           patientId={id}
           patientName={patient.full_name}

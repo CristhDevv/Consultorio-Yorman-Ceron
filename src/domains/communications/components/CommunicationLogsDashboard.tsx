@@ -86,18 +86,18 @@ export default function CommunicationLogsDashboard({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto">
       {/* Filtros */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row gap-4">
+      <div className="bg-white border border-border rounded-xl p-4 flex flex-col md:flex-row gap-4 shadow-sm">
         <div className="flex-1 flex flex-col gap-1.5">
-          <label htmlFor="status-select" className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <label htmlFor="status-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Filtrar por Estado
           </label>
           <select
             id="status-select"
             value={statusFilter}
             onChange={handleStatusChange}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors w-full"
+            className="bg-white border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors w-full"
           >
             <option value="">Todos los estados</option>
             <option value="pending">Pendiente (pending)</option>
@@ -107,14 +107,14 @@ export default function CommunicationLogsDashboard({
         </div>
 
         <div className="flex-1 flex flex-col gap-1.5">
-          <label htmlFor="patient-select" className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <label htmlFor="patient-select" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Filtrar por Paciente
           </label>
           <select
             id="patient-select"
             value={patientFilter}
             onChange={handlePatientChange}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors w-full"
+            className="bg-white border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors w-full"
           >
             <option value="">Todos los pacientes</option>
             {patients.map((p) => (
@@ -128,28 +128,28 @@ export default function CommunicationLogsDashboard({
 
       {/* Error state */}
       {errorMsg && (
-        <div className="bg-red-950/50 border border-red-800/80 rounded-xl p-4 text-red-200 text-sm">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm shadow-xs">
           <p className="font-semibold">Error al cargar datos</p>
-          <p className="text-red-300/80 mt-1">{errorMsg}</p>
+          <p className="text-red-650 mt-1">{errorMsg}</p>
         </div>
       )}
 
       {/* Main Table card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-xs">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400">
-            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             <p className="text-sm font-medium">Cargando logs de comunicación...</p>
           </div>
         ) : logs.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-muted-foreground">
             <p className="text-sm font-medium">No se encontraron logs de comunicación.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
+            <table className="w-full text-left text-sm border-collapse text-foreground">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 bg-slate-950/50 text-xs font-semibold uppercase tracking-wider">
+                <tr className="border-b border-border text-muted-foreground bg-muted/40 text-xs font-semibold uppercase tracking-wider">
                   <th className="py-3.5 px-4">Paciente</th>
                   <th className="py-3.5 px-4">Canal</th>
                   <th className="py-3.5 px-4">Evento</th>
@@ -159,7 +159,7 @@ export default function CommunicationLogsDashboard({
                   <th className="py-3.5 px-4">Detalle / Error</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/50 text-slate-300">
+              <tbody className="divide-y divide-border">
                 {logs.map((log) => {
                   const createdDate = new Date(log.created_at).toLocaleString("es-CO", {
                     day: "numeric",
@@ -179,42 +179,42 @@ export default function CommunicationLogsDashboard({
                     : "—"
 
                   return (
-                    <tr key={log.id} className="hover:bg-slate-950/20 transition-colors">
-                      <td className="py-3 px-4 font-medium text-white">
+                    <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-foreground">
                         {log.patients?.full_name || "Paciente Desconocido"}
                       </td>
-                      <td className="py-3 px-4 text-xs font-mono uppercase text-slate-400">
+                      <td className="py-3 px-4 text-xs font-mono uppercase text-muted-foreground">
                         {log.channel}
                       </td>
-                      <td className="py-3 px-4 text-xs font-medium text-slate-300 capitalize">
+                      <td className="py-3 px-4 text-xs font-medium text-foreground capitalize">
                         {log.event_type}
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide ${
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
                             log.status === "sent"
-                              ? "bg-emerald-950 text-emerald-400 border border-emerald-800/30"
+                              ? "bg-emerald-55 bg-emerald-50 text-emerald-700 border border-emerald-200"
                               : log.status === "failed"
-                              ? "bg-red-950 text-red-400 border border-red-800/30"
-                              : "bg-amber-950 text-amber-400 border border-amber-800/30"
+                              ? "bg-red-50 text-red-700 border border-red-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
                           }`}
                         >
                           {log.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-xs text-slate-400">
+                      <td className="py-3 px-4 text-xs text-muted-foreground">
                         {createdDate}
                       </td>
-                      <td className="py-3 px-4 text-xs text-slate-400">
+                      <td className="py-3 px-4 text-xs text-muted-foreground">
                         {sentDate}
                       </td>
                       <td className="py-3 px-4 text-xs max-w-xs truncate">
                         {log.status === "failed" && log.error_message ? (
-                          <span className="text-red-400 font-medium" title={log.error_message}>
+                          <span className="text-red-650 font-semibold" title={log.error_message}>
                             {log.error_message}
                           </span>
                         ) : (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-muted-foreground/60">—</span>
                         )}
                       </td>
                     </tr>

@@ -16,30 +16,30 @@ type AppointmentStatus = "programada" | "confirmada" | "completada" | "cancelada
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; className: string }> = {
   programada: {
     label: "Programada",
-    className: "bg-blue-500/10 border border-blue-500/20 text-blue-400",
+    className: "bg-blue-50 border border-blue-200 text-blue-700",
   },
   confirmada: {
     label: "Confirmada",
-    className: "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400",
+    className: "bg-teal-50 border border-teal-250 text-teal-755",
   },
   completada: {
     label: "Completada",
-    className: "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
+    className: "bg-emerald-50 border border-emerald-250 text-emerald-700",
   },
   cancelada: {
     label: "Cancelada",
-    className: "bg-red-500/10 border border-red-500/20 text-red-400",
+    className: "bg-red-50 border border-red-200 text-red-700",
   },
   no_asistio: {
     label: "No asistió",
-    className: "bg-amber-500/10 border border-amber-500/20 text-amber-400",
+    className: "bg-amber-50 border border-amber-200 text-amber-700",
   },
 }
 
 function StatusBadge({ status }: { status: string }) {
   const config = STATUS_CONFIG[status as AppointmentStatus] ?? {
     label: status,
-    className: "bg-slate-500/10 border border-slate-500/20 text-slate-400",
+    className: "bg-gray-50 border border-gray-200 text-gray-700",
   }
 
   return (
@@ -89,17 +89,17 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
 
   if (!appointment) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 max-w-md w-full text-center">
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 max-w-3xl mx-auto">
+        <Card className="bg-white border-border text-foreground max-w-md w-full text-center shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white text-xl">Cita No Encontrada</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-foreground text-xl font-bold">Cita No Encontrada</CardTitle>
+            <CardDescription className="text-muted-foreground">
               La cita que buscas no existe o ha sido eliminada del sistema.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/appointments">
-              <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white w-full">
+              <Button className="bg-primary hover:bg-primary/90 text-white w-full shadow-xs">
                 Volver a la Agenda
               </Button>
             </Link>
@@ -114,17 +114,17 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
       {/* Header con botón Volver y Editar */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
-          <Link href="/appointments" className="text-xs text-cyan-400 hover:underline flex items-center gap-1 mb-2">
+          <Link href="/appointments" className="text-xs text-primary font-semibold hover:underline flex items-center gap-1 mb-2">
             ← Volver a la Agenda
           </Link>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
             Detalle de Cita
             <StatusBadge status={appointment.status} />
           </h1>
         </div>
 
         <Link href={`/appointments/${appointment.id}/edit`}>
-          <Button className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-medium">
+          <Button className="bg-white hover:bg-muted text-foreground border border-border font-semibold shadow-xs">
             Editar Cita Completa
           </Button>
         </Link>
@@ -132,71 +132,71 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
 
       <div className="flex flex-col gap-6">
         {/* Card de Información Básica */}
-        <Card className="bg-slate-900 border-slate-800 text-slate-100">
-          <CardHeader className="border-b border-slate-800/60">
-            <CardTitle className="text-white text-lg">Información de la Consulta</CardTitle>
-            <CardDescription className="text-slate-400">
+        <Card className="bg-white border-border text-foreground shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-foreground text-lg font-bold">Información de la Consulta</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Historial y planificación de la cita clínica.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5 pt-5">
             {/* Paciente */}
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-sm font-semibold text-slate-400">Paciente:</span>
+              <span className="text-sm font-semibold text-muted-foreground">Paciente:</span>
               <div className="col-span-2">
                 {appointment.patients ? (
                   <Link
                     href={`/patients/${appointment.patients.id}`}
-                    className="text-sm font-bold text-cyan-400 hover:underline"
+                    className="text-sm font-bold text-primary hover:underline"
                   >
                     {appointment.patients.full_name}
                   </Link>
                 ) : (
-                  <span className="text-sm text-slate-500">—</span>
+                  <span className="text-sm text-muted-foreground/60">—</span>
                 )}
                 {appointment.patients?.document_id && (
-                  <span className="text-xs text-slate-500 block">Doc: {appointment.patients.document_id}</span>
+                  <span className="text-xs text-muted-foreground block">Doc: {appointment.patients.document_id}</span>
                 )}
               </div>
             </div>
 
             {/* Odontólogo */}
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-sm font-semibold text-slate-400">Odontólogo:</span>
-              <span className="col-span-2 text-sm text-slate-200">
-                {appointment.profiles?.full_name ?? <span className="text-slate-500">—</span>}
+              <span className="text-sm font-semibold text-muted-foreground">Odontólogo:</span>
+              <span className="col-span-2 text-sm text-foreground">
+                {appointment.profiles?.full_name ?? <span className="text-muted-foreground/60">—</span>}
               </span>
             </div>
 
             {/* Fecha y Hora */}
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-sm font-semibold text-slate-400">Fecha y Hora:</span>
-              <span className="col-span-2 text-sm text-slate-200 capitalize">
+              <span className="text-sm font-semibold text-muted-foreground">Fecha y Hora:</span>
+              <span className="col-span-2 text-sm text-foreground capitalize">
                 {formatDateTime(appointment.starts_at)}
               </span>
             </div>
 
             {/* Duración */}
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-sm font-semibold text-slate-400">Duración:</span>
-              <span className="col-span-2 text-sm text-slate-200">
+              <span className="text-sm font-semibold text-muted-foreground">Duración:</span>
+              <span className="col-span-2 text-sm text-foreground">
                 {appointment.duration_minutes} minutos
               </span>
             </div>
 
             {/* Motivo */}
-            <div className="grid grid-cols-3 gap-2 border-t border-slate-800/40 pt-4">
-              <span className="text-sm font-semibold text-slate-400">Motivo:</span>
-              <span className="col-span-2 text-sm text-slate-200 bg-slate-950 p-3 rounded-lg border border-slate-850">
-                {appointment.reason || <span className="text-slate-500 italic">No especificado</span>}
+            <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-4">
+              <span className="text-sm font-semibold text-muted-foreground">Motivo:</span>
+              <span className="col-span-2 text-sm text-foreground bg-muted/20 p-3 rounded-lg border border-border">
+                {appointment.reason || <span className="text-muted-foreground/60 italic">No especificado</span>}
               </span>
             </div>
 
             {/* Notas */}
             <div className="grid grid-cols-3 gap-2">
-              <span className="text-sm font-semibold text-slate-400">Notas / Observaciones:</span>
-              <span className="col-span-2 text-sm text-slate-200 bg-slate-950 p-3 rounded-lg border border-slate-850">
-                {appointment.notes || <span className="text-slate-500 italic">Sin observaciones</span>}
+              <span className="text-sm font-semibold text-muted-foreground">Notas / Observaciones:</span>
+              <span className="col-span-2 text-sm text-foreground bg-muted/20 p-3 rounded-lg border border-border">
+                {appointment.notes || <span className="text-muted-foreground/60 italic">Sin observaciones</span>}
               </span>
             </div>
           </CardContent>

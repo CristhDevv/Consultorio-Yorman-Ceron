@@ -34,34 +34,34 @@ interface AppointmentsTableProps {
 const STATUS_CONFIG: Record<AppointmentStatus, { label: string; className: string }> = {
   programada: {
     label: "Programada",
-    className: "bg-blue-500/10 border border-blue-500/20 text-blue-400",
+    className: "bg-blue-50 border border-blue-200 text-blue-700",
   },
   confirmada: {
     label: "Confirmada",
-    className: "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400",
+    className: "bg-teal-50 border border-teal-200 text-teal-750",
   },
   completada: {
     label: "Completada",
-    className: "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
+    className: "bg-emerald-50 border border-emerald-250 text-emerald-700",
   },
   cancelada: {
     label: "Cancelada",
-    className: "bg-red-500/10 border border-red-500/20 text-red-400",
+    className: "bg-red-50 border border-red-200 text-red-700",
   },
   no_asistio: {
     label: "No asistió",
-    className: "bg-amber-500/10 border border-amber-500/20 text-amber-400",
+    className: "bg-amber-50 border border-amber-200 text-amber-700",
   },
 }
 
 function StatusBadge({ status }: { status: string }) {
   const config = STATUS_CONFIG[status as AppointmentStatus] ?? {
     label: status,
-    className: "bg-slate-500/10 border border-slate-500/20 text-slate-400",
+    className: "bg-gray-50 border border-gray-200 text-gray-700",
   }
 
   return (
-    <span className={`text-[11px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wide ${config.className}`}>
+    <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide ${config.className}`}>
       {config.label}
     </span>
   )
@@ -93,38 +93,38 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
   return (
     <div className="flex flex-col gap-4">
       {/* Controles de Búsqueda y Acción */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white border border-border p-4 rounded-xl shadow-sm">
         <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre del paciente u odontólogo..."
-          className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500 w-full sm:max-w-md"
+          className="bg-white border-border text-foreground focus:border-primary w-full sm:max-w-md"
         />
         <Link href="/appointments/new">
-          <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white w-full sm:w-auto font-medium">
+          <Button className="bg-primary hover:bg-primary/90 text-white w-full sm:w-auto font-medium shadow-xs">
             + Nueva Cita
           </Button>
         </Link>
       </div>
 
       {/* Tabla de Citas */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <Table className="text-slate-200">
-          <TableHeader className="bg-slate-950/50 border-b border-slate-800">
-            <TableRow className="border-b border-slate-800 hover:bg-transparent">
-              <TableHead className="text-slate-400 font-bold">Fecha y Hora</TableHead>
-              <TableHead className="text-slate-400 font-bold">Paciente</TableHead>
-              <TableHead className="text-slate-400 font-bold">Odontólogo</TableHead>
-              <TableHead className="text-slate-400 font-bold">Estado</TableHead>
-              <TableHead className="text-slate-400 font-bold">Motivo</TableHead>
-              <TableHead className="text-right text-slate-400 font-bold">Acciones</TableHead>
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-xs">
+        <Table>
+          <TableHeader className="bg-muted/40 border-b border-border">
+            <TableRow className="border-b border-border hover:bg-transparent">
+              <TableHead className="text-muted-foreground font-semibold">Fecha y Hora</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Paciente</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Odontólogo</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Estado</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Motivo</TableHead>
+              <TableHead className="text-right text-muted-foreground font-semibold">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAppointments.length === 0 ? (
-              <TableRow className="border-b border-slate-800 hover:bg-transparent">
-                <TableCell colSpan={6} className="text-center py-10 text-slate-500">
+              <TableRow className="border-b border-border hover:bg-transparent">
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   {search
                     ? "No se encontraron citas que coincidan con la búsqueda."
                     : "No hay citas registradas en el sistema."}
@@ -134,29 +134,29 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
               filteredAppointments.map((appointment) => (
                 <TableRow
                   key={appointment.id}
-                  className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors"
+                  className="border-b border-border/60 hover:bg-muted/30 transition-colors"
                 >
-                  <TableCell className="font-mono text-xs text-slate-300 whitespace-nowrap">
+                  <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
                     {formatDateTime(appointment.starts_at)}
                   </TableCell>
-                  <TableCell className="font-semibold text-white">
-                    {appointment.patients?.full_name ?? <span className="text-slate-500">—</span>}
+                  <TableCell className="font-semibold text-foreground">
+                    {appointment.patients?.full_name ?? <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell className="text-slate-300">
-                    {appointment.profiles?.full_name ?? <span className="text-slate-500">—</span>}
+                  <TableCell className="text-muted-foreground">
+                    {appointment.profiles?.full_name ?? <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={appointment.status} />
                   </TableCell>
-                  <TableCell className="text-slate-400 max-w-[200px] truncate">
-                    {appointment.reason || <span className="text-slate-600">—</span>}
+                  <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                    {appointment.reason || <span className="text-muted-foreground/60">—</span>}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Link href={`/appointments/${appointment.id}`}>
                         <Button
                           variant="ghost"
-                          className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 h-8 px-3"
+                          className="text-primary hover:text-primary/90 hover:bg-primary/10 h-8 px-3"
                         >
                           Ver
                         </Button>
@@ -164,7 +164,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
                       <Link href={`/appointments/${appointment.id}/edit`}>
                         <Button
                           variant="ghost"
-                          className="text-slate-400 hover:text-white hover:bg-slate-800 h-8 px-3"
+                          className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 px-3"
                         >
                           Editar
                         </Button>

@@ -37,38 +37,38 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Controles de Búsqueda y Acción */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white border border-border p-4 rounded-xl shadow-sm">
         <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre, documento o teléfono..."
-          className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500 w-full sm:max-w-md"
+          className="bg-white border-border text-foreground focus:border-primary w-full sm:max-w-md"
         />
         <Link href="/patients/new">
-          <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white w-full sm:w-auto font-medium">
+          <Button className="bg-primary hover:bg-primary/90 text-white w-full sm:w-auto font-medium shadow-xs">
             + Nuevo Paciente
           </Button>
         </Link>
       </div>
 
       {/* Tabla de Pacientes */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <Table className="text-slate-200">
-          <TableHeader className="bg-slate-950/50 border-b border-slate-800">
-            <TableRow className="border-b border-slate-800 hover:bg-transparent">
-              <TableHead className="text-slate-400 font-bold">Paciente</TableHead>
-              <TableHead className="text-slate-400 font-bold">Documento</TableHead>
-              <TableHead className="text-slate-400 font-bold">Teléfono</TableHead>
-              <TableHead className="text-slate-400 font-bold">F. Nacimiento</TableHead>
-              <TableHead className="text-slate-400 font-bold">Alertas Médicas</TableHead>
-              <TableHead className="text-right text-slate-400 font-bold">Acciones</TableHead>
+      <div className="bg-white border border-border rounded-xl overflow-hidden shadow-xs">
+        <Table>
+          <TableHeader className="bg-muted/40 border-b border-border">
+            <TableRow className="border-b border-border hover:bg-transparent">
+              <TableHead className="text-muted-foreground font-semibold">Paciente</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Documento</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Teléfono</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">F. Nacimiento</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Alertas Médicas</TableHead>
+              <TableHead className="text-right text-muted-foreground font-semibold">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredPatients.length === 0 ? (
-              <TableRow className="border-b border-slate-850 hover:bg-transparent">
-                <TableCell colSpan={6} className="text-center py-10 text-slate-500">
+              <TableRow className="border-b border-border hover:bg-transparent">
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   No se encontraron pacientes registrados en el sistema.
                 </TableCell>
               </TableRow>
@@ -79,45 +79,45 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
                 const hasDiseases = patient.diseases && patient.diseases.trim().length > 0
 
                 return (
-                  <TableRow key={patient.id} className="border-b border-slate-800/60 hover:bg-slate-850/30 transition-colors">
-                    <TableCell className="font-semibold text-white">
+                  <TableRow key={patient.id} className="border-b border-border/60 hover:bg-muted/30 transition-colors">
+                    <TableCell className="font-semibold text-foreground">
                       {patient.full_name}
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-slate-300">
+                    <TableCell className="font-mono text-xs text-muted-foreground">
                       {patient.document_id}
                     </TableCell>
-                    <TableCell className="text-slate-300">
+                    <TableCell className="text-muted-foreground">
                       {patient.phone || "—"}
                     </TableCell>
-                    <TableCell className="text-slate-300">
+                    <TableCell className="text-muted-foreground">
                       {patient.birth_date}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         {hasAllergies && (
-                          <span className="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
+                          <span className="bg-red-50 border border-red-200 text-red-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
                             Alergia
                           </span>
                         )}
                         {hasDiseases && (
-                          <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
+                          <span className="bg-amber-50 border border-amber-200 text-amber-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase">
                             Enfermedad
                           </span>
                         )}
                         {!hasAllergies && !hasDiseases && (
-                          <span className="text-slate-600 text-xs">—</span>
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Link href={`/patients/${patient.id}`}>
-                          <Button variant="ghost" className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 h-8 px-3">
+                          <Button variant="ghost" className="text-primary hover:text-primary/90 hover:bg-primary/10 h-8 px-3">
                             Ver
                           </Button>
                         </Link>
                         <Link href={`/patients/${patient.id}/edit`}>
-                          <Button variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800 h-8 px-3">
+                          <Button variant="ghost" className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 px-3">
                             Editar
                           </Button>
                         </Link>

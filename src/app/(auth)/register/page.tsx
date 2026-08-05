@@ -53,25 +53,25 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Crear Cuenta</h1>
-        <p className="text-sm text-slate-400 mt-1">Regístrate para gestionar tus citas médicas</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Crear Cuenta</h1>
+        <p className="text-sm text-muted-foreground mt-1">Regístrate para gestionar tus citas médicas</p>
       </div>
 
       {error && (
-        <div className="bg-red-500/15 border border-red-500/30 text-red-200 text-sm p-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-750 text-sm p-3 rounded-lg shadow-xs">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-sm p-3 rounded-lg">
+        <div className="bg-teal-50 border border-teal-200 text-teal-700 text-sm p-3 rounded-lg shadow-xs">
           Registro exitoso. Redirigiendo al login...
         </div>
       )}
 
       <form onSubmit={handleRegister} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="fullName" className="text-xs font-semibold text-slate-300">
+          <label htmlFor="fullName" className="text-xs font-semibold text-muted-foreground">
             Nombre Completo
           </label>
           <input
@@ -81,12 +81,12 @@ export default function RegisterPage() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Juan Pérez"
-            className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500 transition-colors"
+            className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-xs font-semibold text-slate-300">
+          <label htmlFor="email" className="text-xs font-semibold text-muted-foreground">
             Correo Electrónico
           </label>
           <input
@@ -96,12 +96,12 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="juan.perez@example.com"
-            className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500 transition-colors"
+            className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-xs font-semibold text-slate-300">
+          <label htmlFor="password" className="text-xs font-semibold text-muted-foreground">
             Contraseña
           </label>
           <input
@@ -111,19 +111,19 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500 transition-colors"
+            className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="role" className="text-xs font-semibold text-slate-300">
+          <label htmlFor="role" className="text-xs font-semibold text-muted-foreground">
             Rol en el Sistema
           </label>
           <select
             id="role"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500 transition-colors"
+            className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
           >
             <option value="paciente">Paciente</option>
             <option value="odontologo">Odontólogo</option>
@@ -135,15 +135,15 @@ export default function RegisterPage() {
           type="submit"
           disabled={loading}
           variant="default"
-          className="w-full mt-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-medium py-2 rounded-lg"
+          className="w-full mt-2 bg-primary hover:bg-primary/90 text-white font-medium py-2 rounded-lg shadow-xs"
         >
           {loading ? "Registrando..." : "Crear Cuenta"}
         </Button>
       </form>
 
-      <div className="text-center text-sm text-slate-400">
+      <div className="text-center text-sm text-muted-foreground">
         ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="text-cyan-400 hover:underline">
+        <Link href="/login" className="text-primary font-semibold hover:underline">
           Inicia Sesión
         </Link>
       </div>

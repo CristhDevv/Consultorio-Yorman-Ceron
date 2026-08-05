@@ -139,7 +139,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-4xl mx-auto">
       {errorMsg && (
-        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-200">
+        <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-750">
           <AlertTitle>Error en la cita</AlertTitle>
           <AlertDescription>{errorMsg}</AlertDescription>
         </Alert>
@@ -148,22 +148,22 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Columna Izquierda: Selección de Paciente, Odontólogo y Fecha */}
         <div className="flex flex-col gap-6">
-          <Card className="bg-slate-900 border-slate-800 text-slate-100">
+          <Card className="bg-white border-border text-foreground shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Paso 1: Paciente y Profesional</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-foreground text-lg font-bold">Paso 1: Paciente y Profesional</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Selecciona la persona que recibirá la atención y el profesional a cargo.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               {/* Paciente */}
               <div className="flex flex-col gap-1.5 relative">
-                <Label className="text-slate-300 font-medium">Paciente *</Label>
+                <Label className="text-foreground font-medium">Paciente *</Label>
                 {selectedPatient ? (
-                  <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-lg">
                     <div>
-                      <p className="font-semibold text-white text-sm">{selectedPatient.full_name}</p>
-                      <p className="text-xs text-slate-400">Doc: {selectedPatient.document_id}</p>
+                      <p className="font-semibold text-foreground text-sm">{selectedPatient.full_name}</p>
+                      <p className="text-xs text-muted-foreground">Doc: {selectedPatient.document_id}</p>
                     </div>
                     <Button
                       type="button"
@@ -173,7 +173,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
                         setPatientSearch("")
                         setSelectedSlot(null)
                       }}
-                      className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs px-2 h-7"
+                      className="text-muted-foreground hover:text-foreground hover:bg-muted text-xs px-2 h-7"
                     >
                       Cambiar
                     </Button>
@@ -189,10 +189,10 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
                         setShowPatientResults(true)
                       }}
                       onFocus={() => setShowPatientResults(true)}
-                      className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500 text-sm"
+                      className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm"
                     />
                     {showPatientResults && filteredPatients.length > 0 && (
-                      <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 overflow-hidden">
+                      <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-border rounded-lg shadow-lg z-50 overflow-hidden">
                         {filteredPatients.map(p => (
                           <button
                             key={p.id}
@@ -201,16 +201,16 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
                               setSelectedPatient(p)
                               setShowPatientResults(false)
                             }}
-                            className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800 hover:text-white border-b border-slate-900 last:border-0 transition-colors"
+                            className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-muted border-b border-border last:border-0 transition-colors"
                           >
-                            <span className="font-medium text-white block">{p.full_name}</span>
-                            <span className="text-xs text-slate-400">Cédula: {p.document_id}</span>
+                            <span className="font-semibold text-foreground block">{p.full_name}</span>
+                            <span className="text-xs text-muted-foreground">Cédula: {p.document_id}</span>
                           </button>
                         ))}
                       </div>
                     )}
                     {showPatientResults && patientSearch.trim() !== "" && filteredPatients.length === 0 && (
-                      <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 p-3 text-xs text-slate-400 text-center">
+                      <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-border rounded-lg shadow-lg z-50 p-3 text-xs text-muted-foreground text-center">
                         No se encontraron pacientes que coincidan.
                       </div>
                     )}
@@ -220,7 +220,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
 
               {/* Odontólogo */}
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dentist" className="text-slate-300 font-medium">Odontólogo *</Label>
+                <Label htmlFor="dentist" className="text-foreground font-medium">Odontólogo *</Label>
                 <select
                   id="dentist"
                   value={selectedDentistId}
@@ -228,7 +228,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
                     setSelectedDentistId(e.target.value)
                     setSelectedSlot(null)
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
+                  className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
                 >
                   <option value="" disabled>Seleccione un odontólogo...</option>
                   {dentists.map(d => (
@@ -241,7 +241,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
 
               {/* Fecha */}
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="date" className="text-slate-300 font-medium">Fecha de la Cita *</Label>
+                <Label htmlFor="date" className="text-foreground font-medium">Fecha de la Cita *</Label>
                 <Input
                   id="date"
                   type="date"
@@ -251,7 +251,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
                     setSelectedDate(e.target.value)
                     setSelectedSlot(null)
                   }}
-                  className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500 text-sm"
+                  className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm"
                 />
               </div>
             </CardContent>
@@ -260,25 +260,25 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
 
         {/* Columna Derecha: Selección de Horario */}
         <div className="flex flex-col gap-6">
-          <Card className="bg-slate-900 border-slate-800 text-slate-100 h-full flex flex-col">
+          <Card className="bg-white border-border text-foreground h-full flex flex-col shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Paso 2: Horarios Disponibles</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-foreground text-lg font-bold">Paso 2: Horarios Disponibles</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Selecciona la hora de la consulta según la disponibilidad.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-center">
               {!selectedDentistId || !selectedDate ? (
-                <div className="text-center py-10 text-slate-500 text-sm border-2 border-dashed border-slate-800 rounded-xl">
+                <div className="text-center py-10 text-muted-foreground text-sm border-2 border-dashed border-border rounded-xl">
                   Selecciona odontólogo y fecha para ver los horarios disponibles.
                 </div>
               ) : loadingSlots ? (
-                <div className="flex flex-col items-center gap-3 py-10 text-slate-400">
-                  <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                <div className="flex flex-col items-center gap-3 py-10 text-muted-foreground">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   <p className="text-sm">Buscando bloques de tiempo disponibles...</p>
                 </div>
               ) : slots.length === 0 ? (
-                <div className="text-center py-10 text-amber-400/80 text-sm border border-amber-500/20 bg-amber-500/5 rounded-xl px-4">
+                <div className="text-center py-10 text-amber-700 text-sm border border-amber-250 bg-amber-50 rounded-xl px-4">
                   No hay horarios disponibles para esta fecha con el odontólogo seleccionado. Por favor intenta con otro día u otro profesional.
                 </div>
               ) : (
@@ -292,8 +292,8 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
                         onClick={() => setSelectedSlot(slot)}
                         className={`py-2 px-3 text-xs font-semibold rounded-lg text-center transition-all ${
                           isSelected
-                            ? "bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/25 scale-[1.02]"
-                            : "bg-slate-950 border border-slate-800 text-slate-300 hover:border-cyan-500/50 hover:text-white"
+                            ? "bg-primary text-white font-bold shadow-xs scale-[1.02]"
+                            : "bg-white border border-border text-foreground hover:bg-muted"
                         }`}
                       >
                         {formatSlotTime(slot.starts_at)}
@@ -308,28 +308,28 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
       </div>
 
       {/* Fila Inferior: Detalles de la Cita (Motivo y Notas) */}
-      <Card className="bg-slate-900 border-slate-800 text-slate-100">
+      <Card className="bg-white border-border text-foreground shadow-sm">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Paso 3: Detalles Médicos</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-foreground text-lg font-bold">Paso 3: Detalles Médicos</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Añade el motivo de la consulta y observaciones iniciales.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="reason" className="text-slate-300 font-medium">Motivo de la Cita</Label>
+            <Label htmlFor="reason" className="text-foreground font-medium">Motivo de la Cita</Label>
             <Input
               id="reason"
               disabled={!selectedSlot}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Ej: Limpieza dental, dolor de muela, calza..."
-              className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="notes" className="text-slate-300 font-medium">Notas / Observaciones</Label>
+            <Label htmlFor="notes" className="text-foreground font-medium">Notas / Observaciones</Label>
             <textarea
               id="notes"
               disabled={!selectedSlot}
@@ -337,7 +337,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Cualquier información complementaria útil..."
               rows={3}
-              className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors placeholder-muted-foreground/60 resize-none"
             />
           </div>
         </CardContent>
@@ -349,14 +349,14 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
           type="button"
           variant="outline"
           onClick={() => router.back()}
-          className="border-slate-800 text-slate-300 hover:bg-slate-800"
+          className="border-border text-foreground hover:bg-muted"
         >
           Cancelar
         </Button>
         <Button
           type="submit"
           disabled={submitting || !selectedPatient || !selectedDentistId || !selectedDate || !selectedSlot}
-          className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+          className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-xs"
         >
           {submitting ? "Programando Cita..." : "Programar Cita"}
         </Button>

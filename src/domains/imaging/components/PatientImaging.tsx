@@ -181,11 +181,11 @@ export default function PatientImaging({
   return (
     <div className="flex flex-col gap-6">
       {/* ── Galería de imágenes ───────────────────────────────────────────── */}
-      <Card className="bg-slate-900 border-slate-800 text-slate-100">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <Card className="bg-white border-border text-foreground shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex flex-col gap-1.5">
-            <CardTitle className="text-white text-lg">Estudios de Imagenología</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-foreground text-lg font-bold">Estudios de Imagenología</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Radiografías, tomografías y registros visuales del paciente.
             </CardDescription>
           </div>
@@ -193,7 +193,7 @@ export default function PatientImaging({
             <Button
               id="btn-abrir-papelera-imagenes"
               variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-cyan-400 hover:border-cyan-500/30 text-xs h-8 px-3 transition-all"
+              className="border-border text-foreground hover:bg-muted text-xs h-8 px-3 transition-all"
               onClick={handleOpenTrash}
             >
               Papelera
@@ -202,7 +202,7 @@ export default function PatientImaging({
         </CardHeader>
         <CardContent>
           {initialImages.length === 0 ? (
-            <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 text-sm text-slate-400 text-center">
+            <div className="bg-muted/10 border border-border rounded-lg p-6 text-sm text-muted-foreground text-center">
               No hay imágenes ni radiografías cargadas para este paciente.
             </div>
           ) : (
@@ -212,17 +212,17 @@ export default function PatientImaging({
                 return (
                   <div
                     key={img.id}
-                    className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col group hover:border-slate-700 transition-all duration-300"
+                    className="bg-white border border-border rounded-xl overflow-hidden flex flex-col group hover:border-border/80 shadow-xs hover:shadow-sm transition-all duration-300"
                   >
                     {/* Visualización del estudio */}
                     <div
-                      className="relative h-44 bg-slate-900 flex items-center justify-center overflow-hidden cursor-pointer"
+                      className="relative h-44 bg-muted/30 flex items-center justify-center overflow-hidden cursor-pointer"
                       onClick={() => setPreviewImage({ url: img.signed_url, title: `${label} - ${img.file_name}` })}
                     >
                       {img.file_name.toLowerCase().endsWith(".pdf") ? (
                         <div className="flex flex-col items-center gap-2">
                           <span className="text-4xl">📄</span>
-                          <span className="text-xs text-slate-400 font-mono px-2 truncate max-w-full">
+                          <span className="text-xs text-muted-foreground font-mono px-2 truncate max-w-full">
                             {img.file_name}
                           </span>
                         </div>
@@ -234,7 +234,7 @@ export default function PatientImaging({
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       )}
-                      <div className="absolute top-2 left-2 bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-sm">
+                      <div className="absolute top-2 left-2 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full backdrop-blur-xs">
                         {label}
                       </div>
                     </div>
@@ -242,30 +242,30 @@ export default function PatientImaging({
                     {/* Información y acciones */}
                     <div className="p-4 flex flex-col gap-2 flex-grow">
                       <div className="flex flex-col gap-1 min-w-0">
-                        <span className="text-white text-xs font-semibold font-mono truncate" title={img.file_name}>
+                        <span className="text-foreground text-xs font-semibold font-mono truncate" title={img.file_name}>
                           {img.file_name}
                         </span>
-                        <span className="text-[11px] text-slate-500 font-mono">
+                        <span className="text-[11px] text-muted-foreground font-mono">
                           {formatDate(img.created_at)}
                         </span>
                         {img.description && (
-                          <p className="text-xs text-slate-400 italic line-clamp-2 mt-1">
+                          <p className="text-xs text-muted-foreground italic line-clamp-2 mt-1">
                             &ldquo;{img.description}&rdquo;
                           </p>
                         )}
                         {deleteErrors[img.id] && (
-                          <span className="text-xs text-red-400 mt-1">
+                          <span className="text-xs text-red-600 mt-1 font-semibold">
                             {deleteErrors[img.id]}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex gap-2 mt-auto pt-2 border-t border-slate-900">
+                      <div className="flex gap-2 mt-auto pt-2 border-t border-border">
                         <Button
                           id={`btn-ver-imagen-${img.id}`}
                           variant="outline"
                           size="sm"
-                          className="flex-1 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-cyan-400 text-xs h-7"
+                          className="flex-1 border-border text-foreground hover:bg-muted text-xs h-7"
                           onClick={() => setPreviewImage({ url: img.signed_url, title: `${label} - ${img.file_name}` })}
                         >
                           Ver
@@ -275,7 +275,7 @@ export default function PatientImaging({
                             id={`btn-eliminar-imagen-${img.id}`}
                             variant="outline"
                             size="sm"
-                            className="border-red-950/50 text-red-400 hover:bg-red-950/50 text-xs h-7"
+                            className="border-red-200 text-red-650 hover:bg-red-50 text-xs h-7"
                             disabled={!!deleteLoading[img.id]}
                             onClick={() => handleDelete(img.id)}
                           >
@@ -293,10 +293,10 @@ export default function PatientImaging({
       </Card>
 
       {/* ── Formulario de subida ─────────────────────────────────────────── */}
-      <Card className="bg-slate-900 border-slate-800 text-slate-100">
+      <Card className="bg-white border-border text-foreground shadow-sm">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Cargar Estudio de Imagenología</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-foreground text-lg font-bold">Cargar Estudio de Imagenología</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Sube radiografías panorámicas, tomografías u otros estudios clínicos. PDF o imágenes. Máximo 5 MB.
           </CardDescription>
         </CardHeader>
@@ -307,7 +307,7 @@ export default function PatientImaging({
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="image-type-input"
-                  className="text-xs font-bold uppercase tracking-wider text-slate-400"
+                  className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                 >
                   Tipo de estudio
                 </label>
@@ -315,7 +315,7 @@ export default function PatientImaging({
                   id="image-type-input"
                   value={imageType}
                   onChange={(e) => setImageType(e.target.value as ImagingType)}
-                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                  className="bg-white border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
                 >
                   {IMAGING_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -329,7 +329,7 @@ export default function PatientImaging({
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="image-file-input"
-                  className="text-xs font-bold uppercase tracking-wider text-slate-400"
+                  className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
                 >
                   Archivo
                 </label>
@@ -338,7 +338,7 @@ export default function PatientImaging({
                   type="file"
                   ref={fileInputRef}
                   accept="image/*,application/pdf"
-                  className="text-sm text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 file:transition-colors cursor-pointer"
+                  className="text-sm text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-border file:text-xs file:font-semibold file:bg-white file:text-foreground hover:file:bg-muted file:transition-colors cursor-pointer"
                 />
               </div>
             </div>
@@ -347,7 +347,7 @@ export default function PatientImaging({
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="image-description-input"
-                className="text-xs font-bold uppercase tracking-wider text-slate-400"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 Descripción / Notas clínicas
               </label>
@@ -357,18 +357,18 @@ export default function PatientImaging({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors resize-none"
+                className="bg-white border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors resize-none"
               />
             </div>
 
             {/* Feedback de estado */}
             {uploadStatus.type === "success" && (
-              <div className="bg-teal-500/10 border border-teal-500/20 text-teal-300 rounded-lg px-3 py-2 text-sm">
+              <div className="bg-teal-50 border border-teal-200 text-teal-700 rounded-lg px-3 py-2 text-sm">
                 ✓ {uploadStatus.message}
               </div>
             )}
             {uploadStatus.type === "error" && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg px-3 py-2 text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">
                 ✗ {uploadStatus.message}
               </div>
             )}
@@ -379,7 +379,7 @@ export default function PatientImaging({
                 id="btn-subir-imagen"
                 type="submit"
                 disabled={uploadStatus.type === "loading"}
-                className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-primary hover:bg-primary/90 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
               >
                 {uploadStatus.type === "loading" ? "Subiendo…" : "Subir estudio"}
               </Button>
@@ -390,11 +390,11 @@ export default function PatientImaging({
 
       {/* Lightbox / Visor de imagen */}
       <Dialog open={previewImage !== null} onOpenChange={(open) => { if (!open) setPreviewImage(null) }}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl p-6">
+        <DialogContent className="bg-white border-border text-foreground max-w-4xl p-6 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white text-lg">{previewImage?.title}</DialogTitle>
+            <DialogTitle className="text-foreground font-bold text-lg">{previewImage?.title}</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center bg-slate-950 rounded-lg overflow-hidden border border-slate-800 p-2 min-h-96 max-h-[70vh]">
+          <div className="flex items-center justify-center bg-muted/10 rounded-lg overflow-hidden border border-border p-2 min-h-96 max-h-[70vh]">
             {previewImage?.url.includes(".pdf") || previewImage?.url.includes("/patient-images") && previewImage?.title.endsWith(".pdf") ? (
               <iframe
                 src={previewImage?.url}
@@ -413,7 +413,7 @@ export default function PatientImaging({
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="border-border text-foreground hover:bg-muted"
               onClick={() => {
                 if (previewImage) {
                   window.open(previewImage.url, "_blank", "noopener,noreferrer")
@@ -423,7 +423,7 @@ export default function PatientImaging({
               Abrir en pestaña nueva
             </Button>
             <Button
-              className="bg-slate-800 text-white hover:bg-slate-750"
+              className="bg-muted text-foreground hover:bg-muted/80"
               onClick={() => setPreviewImage(null)}
             >
               Cerrar
@@ -434,10 +434,10 @@ export default function PatientImaging({
 
       {/* Modal de confirmación de eliminación */}
       <Dialog open={confirmDeleteId !== null} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null) }}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="bg-white border-border text-foreground shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white">Confirmar Eliminación</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-foreground font-bold text-lg">Confirmar Eliminación</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               La imagen clínica se marcará como eliminada y dejará de estar disponible en el expediente clínico activo.
             </DialogDescription>
           </DialogHeader>
@@ -445,7 +445,7 @@ export default function PatientImaging({
             <Button
               id="btn-cancelar-eliminacion-imagen"
               variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="border-border text-foreground hover:bg-muted"
               onClick={() => setConfirmDeleteId(null)}
             >
               Cancelar
@@ -463,29 +463,29 @@ export default function PatientImaging({
 
       {/* Modal de la papelera de imágenes */}
       <Dialog open={isTrashOpen} onOpenChange={(open) => { if (!open) setIsTrashOpen(false) }}>
-        <DialogContent id="modal-papelera-imagenes" className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl">
+        <DialogContent id="modal-papelera-imagenes" className="bg-white border-border text-foreground max-w-2xl shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white">Imágenes Eliminadas</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-foreground font-bold text-lg">Imágenes Eliminadas</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Historial de estudios de imagenología borrados. Puedes restaurarlos en cualquier momento.
             </DialogDescription>
           </DialogHeader>
 
           <div className="my-4">
             {trashLoading && (
-              <div className="text-center py-8 text-sm text-slate-400">
+              <div className="text-center py-8 text-sm text-muted-foreground">
                 Cargando papelera…
               </div>
             )}
 
             {trashError && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg px-3 py-2 text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-750 rounded-lg px-3 py-2 text-sm">
                 ✗ {trashError}
               </div>
             )}
 
             {!trashLoading && !trashError && deletedImages.length === 0 && (
-              <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 text-sm text-slate-400 text-center">
+              <div className="bg-muted/10 border border-border rounded-lg p-6 text-sm text-muted-foreground text-center">
                 No hay imágenes en la papelera.
               </div>
             )}
@@ -497,20 +497,20 @@ export default function PatientImaging({
                   return (
                     <li
                       key={img.id}
-                      className="bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                      className="bg-white border border-border rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs"
                     >
                       <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="text-white text-sm font-semibold font-mono truncate">
+                        <span className="text-foreground text-sm font-semibold font-mono truncate">
                           {img.file_name}
                         </span>
-                        <span className="text-xs text-cyan-400 font-medium">
+                        <span className="text-xs text-primary font-semibold">
                           {label}
                         </span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-muted-foreground">
                           Eliminado el {formatDate(img.deleted_at || "")} por {img.deleted_by_name ?? "Administrador"}
                         </span>
                         {restoreErrors[img.id] && (
-                          <span className="text-xs text-red-400 mt-1">
+                          <span className="text-xs text-red-650 mt-1 font-semibold">
                             {restoreErrors[img.id]}
                           </span>
                         )}
@@ -520,7 +520,7 @@ export default function PatientImaging({
                         <Button
                           id={`btn-restaurar-imagen-${img.id}`}
                           variant="outline"
-                          className="border-emerald-900/50 text-emerald-400 hover:bg-emerald-950 hover:text-emerald-300 hover:border-emerald-500/30 text-xs h-8 px-3 transition-all"
+                          className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 text-xs h-8 px-3 transition-all"
                           disabled={!!restoreLoading[img.id]}
                           onClick={() => handleRestore(img.id)}
                         >
@@ -536,7 +536,7 @@ export default function PatientImaging({
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="border-border text-foreground hover:bg-muted"
               onClick={() => setIsTrashOpen(false)}
             >
               Cerrar

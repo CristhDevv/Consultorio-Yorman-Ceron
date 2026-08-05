@@ -33,19 +33,19 @@ export default function PatientDetailCard({ patient }: PatientDetailCardProps) {
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto">
       {/* Botones de Cabecera */}
-      <div className="flex justify-between items-center bg-slate-900 border border-slate-800 px-6 py-4 rounded-xl">
+      <div className="flex justify-between items-center bg-white border border-border px-6 py-4 rounded-xl shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-white">{patient.full_name}</h2>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">ID Paciente: {patient.id}</p>
+          <h2 className="text-xl font-bold text-foreground">{patient.full_name}</h2>
+          <p className="text-xs text-muted-foreground font-mono mt-0.5">ID Paciente: {patient.id}</p>
         </div>
         <div className="flex gap-3">
           <Link href="/patients">
-            <Button variant="outline" className="border-slate-800 text-slate-300 hover:bg-slate-800">
+            <Button variant="outline" className="border-border text-foreground hover:bg-muted">
               Atrás
             </Button>
           </Link>
           <Link href={`/patients/${patient.id}/edit`}>
-            <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-medium">
+            <Button className="bg-primary hover:bg-primary/90 text-white font-medium shadow-xs">
               Editar Ficha
             </Button>
           </Link>
@@ -54,35 +54,35 @@ export default function PatientDetailCard({ patient }: PatientDetailCardProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Ficha Personal e Identificación */}
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 md:col-span-1">
+        <Card className="bg-white border-border text-foreground md:col-span-1 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white text-lg">Ficha de Identidad</CardTitle>
-            <CardDescription className="text-slate-400">Datos personales registrados.</CardDescription>
+            <CardTitle className="text-foreground text-lg">Ficha de Identidad</CardTitle>
+            <CardDescription className="text-muted-foreground">Datos personales registrados.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 text-sm">
-            <div className="flex flex-col gap-0.5 border-b border-slate-800/60 pb-3">
-              <span className="text-xs text-slate-500">Documento o Cédula:</span>
-              <span className="font-mono text-white font-semibold">{patient.document_id}</span>
+            <div className="flex flex-col gap-0.5 border-b border-border/60 pb-3">
+              <span className="text-xs text-muted-foreground">Documento o Cédula:</span>
+              <span className="font-mono text-foreground font-semibold">{patient.document_id}</span>
             </div>
             
-            <div className="flex flex-col gap-0.5 border-b border-slate-800/60 pb-3">
-              <span className="text-xs text-slate-500">Fecha de Nacimiento:</span>
-              <span className="text-white font-semibold">{patient.birth_date}</span>
+            <div className="flex flex-col gap-0.5 border-b border-border/60 pb-3">
+              <span className="text-xs text-muted-foreground">Fecha de Nacimiento:</span>
+              <span className="text-foreground font-semibold">{patient.birth_date}</span>
             </div>
 
-            <div className="flex flex-col gap-0.5 border-b border-slate-800/60 pb-3">
-              <span className="text-xs text-slate-500">Teléfono:</span>
-              <span className="text-white font-semibold">{patient.phone || "No registrado"}</span>
+            <div className="flex flex-col gap-0.5 border-b border-border/60 pb-3">
+              <span className="text-xs text-muted-foreground">Teléfono:</span>
+              <span className="text-foreground font-semibold">{patient.phone || "No registrado"}</span>
             </div>
 
-            <div className="flex flex-col gap-0.5 border-b border-slate-800/60 pb-3">
-              <span className="text-xs text-slate-500">Email:</span>
-              <span className="text-white font-semibold truncate">{patient.email || "No registrado"}</span>
+            <div className="flex flex-col gap-0.5 border-b border-border/60 pb-3">
+              <span className="text-xs text-muted-foreground">Email:</span>
+              <span className="text-foreground font-semibold truncate">{patient.email || "No registrado"}</span>
             </div>
 
             <div className="flex flex-col gap-0.5 pb-1">
-              <span className="text-xs text-slate-500">Dirección:</span>
-              <span className="text-white font-semibold">{patient.address || "No registrada"}</span>
+              <span className="text-xs text-muted-foreground">Dirección:</span>
+              <span className="text-foreground font-semibold">{patient.address || "No registrada"}</span>
             </div>
           </CardContent>
         </Card>
@@ -91,51 +91,51 @@ export default function PatientDetailCard({ patient }: PatientDetailCardProps) {
         <div className="md:col-span-2 flex flex-col gap-6">
           {/* Bloque Alerta Roja si tiene alergias o enfermedades críticas */}
           {(hasAllergies || hasDiseases) && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-200 p-4 rounded-xl flex items-start gap-3">
+            <div className="bg-red-50 border border-red-200 text-red-750 p-4 rounded-xl flex items-start gap-3 shadow-xs">
               <span className="text-2xl">⚠️</span>
               <div>
-                <h4 className="font-bold text-red-400 text-sm">ALERTAS MÉDICAS ACTIVAS</h4>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                <h4 className="font-bold text-red-700 text-sm">ALERTAS MÉDICAS ACTIVAS</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                   Este paciente presenta antecedentes o alergias que requieren extrema precaución durante tratamientos invasivos o prescripción de medicamentos.
                 </p>
               </div>
             </div>
           )}
 
-          <Card className="bg-slate-900 border-slate-800 text-slate-100 flex-1">
+          <Card className="bg-white border-border text-foreground flex-1 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Información de Salud y Antecedentes</CardTitle>
-              <CardDescription className="text-slate-400">Expediente de salud general del paciente.</CardDescription>
+              <CardTitle className="text-foreground text-lg">Información de Salud y Antecedentes</CardTitle>
+              <CardDescription className="text-muted-foreground">Expediente de salud general del paciente.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
               {/* Alergias */}
               <div className="flex flex-col gap-1.5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-red-400">Alergias</h4>
-                <div className={`p-3 rounded-lg text-sm ${hasAllergies ? 'bg-red-950/20 border border-red-900/30 text-red-100 font-semibold' : 'bg-slate-950 border border-slate-850 text-slate-400'}`}>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-red-600">Alergias</h4>
+                <div className={`p-3 rounded-lg text-sm border ${hasAllergies ? 'bg-red-50 border-red-200 text-red-700 font-semibold' : 'bg-muted/30 border-border text-muted-foreground'}`}>
                   {patient.allergies || "No reporta alergias conocidas."}
                 </div>
               </div>
 
               {/* Enfermedades */}
               <div className="flex flex-col gap-1.5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">Enfermedades crónicas / sistémicas</h4>
-                <div className={`p-3 rounded-lg text-sm ${hasDiseases ? 'bg-amber-950/20 border border-amber-900/30 text-amber-100 font-semibold' : 'bg-slate-950 border border-slate-850 text-slate-400'}`}>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-600">Enfermedades crónicas / sistémicas</h4>
+                <div className={`p-3 rounded-lg text-sm border ${hasDiseases ? 'bg-amber-50 border-amber-200 text-amber-700 font-semibold' : 'bg-muted/30 border-border text-muted-foreground'}`}>
                   {patient.diseases || "No reporta enfermedades sistémicas."}
                 </div>
               </div>
 
               {/* Medicación */}
               <div className="flex flex-col gap-1.5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Medicamentos actuales</h4>
-                <div className={`p-3 rounded-lg text-sm ${hasMedications ? 'bg-cyan-950/20 border border-cyan-900/30 text-cyan-100 font-semibold' : 'bg-slate-950 border border-slate-850 text-slate-400'}`}>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-teal-600">Medicamentos actuales</h4>
+                <div className={`p-3 rounded-lg text-sm border ${hasMedications ? 'bg-teal-50 border-teal-200 text-teal-700 font-semibold' : 'bg-muted/30 border-border text-muted-foreground'}`}>
                   {patient.current_medications || "No toma ningún medicamento actualmente."}
                 </div>
               </div>
 
               {/* Observaciones generales */}
               <div className="flex flex-col gap-1.5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Observaciones y expedientes generales</h4>
-                <div className="bg-slate-950 border border-slate-850 rounded-lg p-3 text-sm text-slate-300 min-h-[80px]">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Observaciones y expedientes generales</h4>
+                <div className="bg-muted/20 border border-border rounded-lg p-3 text-sm text-foreground min-h-[80px]">
                   {patient.medical_observations || "Sin observaciones adicionales."}
                 </div>
               </div>

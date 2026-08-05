@@ -14,10 +14,10 @@ export default function NewPatientPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Registrar Paciente</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Registrar Paciente</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Crea una nueva ficha clínica básica rellenando el siguiente expediente.
         </p>
       </div>

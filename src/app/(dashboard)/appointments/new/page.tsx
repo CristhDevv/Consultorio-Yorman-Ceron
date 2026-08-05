@@ -25,10 +25,10 @@ export default async function NewAppointmentPage() {
   const dentists = dentistsData || []
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Programar Cita</h1>
-        <p className="text-slate-400 text-sm mt-1">
+        <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Programar Cita</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Completa el formulario secuencial para agendar una nueva cita médica.
         </p>
       </div>

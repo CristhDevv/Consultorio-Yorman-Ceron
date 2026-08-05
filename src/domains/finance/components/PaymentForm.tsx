@@ -90,13 +90,13 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl p-6">
+    <div className="bg-white border border-border rounded-xl shadow-sm p-6">
       {/* Encabezado de sección */}
       <div className="mb-5">
-        <h2 className="text-lg font-bold text-white tracking-tight">
+        <h2 className="text-lg font-bold text-foreground tracking-tight">
           Registrar Pago
         </h2>
-        <p className="text-slate-400 text-sm mt-0.5">
+        <p className="text-muted-foreground text-sm mt-0.5">
           Registra un pago o reverso asociado a esta cita clínica.
         </p>
       </div>
@@ -106,14 +106,14 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
         <div
           role="status"
           aria-live="polite"
-          className="mb-5 flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-4 py-3"
+          className="mb-5 flex items-start gap-3 bg-teal-50 border border-teal-200 rounded-lg px-4 py-3 shadow-xs"
         >
-          <span className="mt-0.5 text-emerald-400 text-base">✓</span>
+          <span className="mt-0.5 text-teal-700 text-base">✓</span>
           <div>
-            <p className="text-emerald-300 text-sm font-semibold">
+            <p className="text-teal-750 text-sm font-semibold">
               Pago registrado correctamente
             </p>
-            <p className="text-emerald-400/80 text-xs mt-0.5">
+            <p className="text-teal-700/90 text-xs mt-0.5">
               <span className="capitalize">{state.confirmation.type}</span>
               {" de "}
               <span className="font-bold">
@@ -136,15 +136,15 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
         <div
           role="alert"
           aria-live="assertive"
-          className="mb-5 flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3"
+          className="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3 shadow-xs"
         >
-          <span className="mt-0.5 text-red-400 text-base">✕</span>
+          <span className="mt-0.5 text-red-750 text-base">✕</span>
           <div>
-            <p className="text-red-300 text-sm font-semibold">{state.message}</p>
+            <p className="text-red-700 text-sm font-semibold">{state.message}</p>
             {state.availableBalance !== undefined && (
-              <p className="text-red-400/80 text-xs mt-0.5">
+              <p className="text-red-700/80 text-xs mt-0.5">
                 Saldo disponible en esta cita:{" "}
-                <span className="font-bold text-red-300">
+                <span className="font-bold text-red-700">
                   {state.availableBalance.toLocaleString("es-CO", {
                     style: "currency",
                     currency: "COP",
@@ -168,9 +168,9 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
         <div className="sm:col-span-2 flex flex-col gap-1.5">
           <label
             htmlFor="payment-type"
-            className="text-xs font-bold uppercase tracking-wider text-slate-400"
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
           >
-            Tipo <span className="text-red-400">*</span>
+            Tipo <span className="text-red-600">*</span>
           </label>
           <select
             id="payment-type"
@@ -184,9 +184,9 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
                 fetchPayments()
               }
             }}
-            className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-100
-                       focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white border border-border rounded-lg px-3 py-2.5 text-sm text-foreground
+                       focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             disabled={isPending}
           >
             <option value="" disabled>
@@ -201,9 +201,9 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="payment-amount"
-            className="text-xs font-bold uppercase tracking-wider text-slate-400"
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
           >
-            Monto <span className="text-red-400">*</span>
+            Monto <span className="text-red-650">*</span>
           </label>
           <input
             id="payment-amount"
@@ -213,10 +213,10 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
             step={0.01}
             required
             placeholder="Ej: 150000"
-            className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-100
-                       placeholder:text-slate-600
-                       focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white border border-border rounded-lg px-3 py-2.5 text-sm text-foreground
+                       placeholder:text-muted-foreground/60
+                       focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             disabled={isPending}
           />
         </div>
@@ -225,10 +225,10 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="payment-reason"
-            className="text-xs font-bold uppercase tracking-wider text-slate-400"
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
           >
             Motivo{" "}
-            <span className="text-slate-600 normal-case font-normal">(opcional)</span>
+            <span className="text-muted-foreground/80 normal-case font-normal">(opcional)</span>
           </label>
           <input
             id="payment-reason"
@@ -236,10 +236,10 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
             type="text"
             maxLength={300}
             placeholder="Descripción del pago…"
-            className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-100
-                       placeholder:text-slate-600
-                       focus:outline-none focus:ring-2 focus:ring-cyan-500/60 focus:border-cyan-500
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-white border border-border rounded-lg px-3 py-2.5 text-sm text-foreground
+                       placeholder:text-muted-foreground/60
+                       focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             disabled={isPending}
           />
         </div>
@@ -248,17 +248,17 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
           <div className="sm:col-span-2 flex flex-col gap-1.5">
             <label
               htmlFor="payment-reversed-id"
-              className="text-xs font-bold uppercase tracking-wider text-slate-400"
+              className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
             >
-              Seleccionar pago a reversar <span className="text-red-400">*</span>
+              Seleccionar pago a reversar <span className="text-red-650">*</span>
             </label>
             <select
               id="payment-reversed-id"
               name="reversedPaymentId"
               required
-              className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-100
-                         focus:outline-none focus:ring-2 focus:ring-amber-500/60 focus:border-amber-500
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-white border border-border rounded-lg px-3 py-2.5 text-sm text-foreground
+                         focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               disabled={isPending || loadingPayments}
               defaultValue=""
             >
@@ -291,7 +291,7 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
                   )
                 })}
             </select>
-            <p className="text-amber-500/70 text-xs">
+            <p className="text-amber-600 text-xs mt-0.5">
               Selecciona el pago registrado que deseas reversar.
             </p>
           </div>
@@ -303,10 +303,9 @@ export default function PaymentForm({ appointmentId, patientId }: PaymentFormPro
             id="payment-submit"
             type="submit"
             disabled={isPending}
-            className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700
-                       disabled:text-slate-500 disabled:cursor-not-allowed
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed
                        text-white font-semibold text-sm px-5 py-2.5 rounded-lg
-                       transition-colors shadow-lg shadow-cyan-500/10"
+                       transition-colors shadow-xs"
           >
             {isPending ? (
               <>

@@ -19,7 +19,6 @@ import {
 } from "@/shared/components/ui/dialog"
 import type { ActionResult } from "@/domains/patients/documents/actions"
 
-
 // ─── Tipos ──────────────────────────────────────────────────────────────────
 interface DocumentRow {
   id: string
@@ -217,11 +216,11 @@ export default function PatientDocuments({
   return (
     <div className="flex flex-col gap-6">
       {/* ── Lista de documentos ──────────────────────────────────────────── */}
-      <Card className="bg-slate-900 border-slate-800 text-slate-100">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <Card className="bg-white border-border text-foreground shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex flex-col gap-1.5">
-            <CardTitle className="text-white text-lg">Documentos Adjuntos</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-foreground text-lg font-bold">Documentos Adjuntos</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Archivos clínicos y administrativos vinculados al paciente.
             </CardDescription>
           </div>
@@ -229,7 +228,7 @@ export default function PatientDocuments({
             <Button
               id="btn-abrir-papelera"
               variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-cyan-400 hover:border-cyan-500/30 text-xs h-8 px-3 transition-all"
+              className="border-border text-foreground hover:bg-muted text-xs h-8 px-3 transition-all"
               onClick={handleOpenTrash}
             >
               Papelera
@@ -238,7 +237,7 @@ export default function PatientDocuments({
         </CardHeader>
         <CardContent>
           {initialDocuments.length === 0 ? (
-            <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-slate-400 text-center">
+            <div className="bg-muted/10 border border-border rounded-lg p-4 text-sm text-muted-foreground text-center">
               No hay documentos adjuntos para este paciente.
             </div>
           ) : (
@@ -246,28 +245,28 @@ export default function PatientDocuments({
               {initialDocuments.map((doc) => (
                 <li
                   key={doc.id}
-                  className="bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  className="bg-white border border-border rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs"
                 >
                   {/* Información del documento */}
                   <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-white text-sm font-semibold truncate">
+                    <span className="text-foreground text-sm font-semibold truncate">
                       {doc.file_name}
                     </span>
-                    <span className="text-xs text-cyan-400 font-medium">
+                    <span className="text-xs text-primary font-semibold">
                       {doc.document_type}
                     </span>
-                    <span className="text-[11px] text-slate-500 font-mono">
+                    <span className="text-[11px] text-muted-foreground font-mono">
                       {formatDate(doc.created_at)}
                     </span>
                     {/* Error inline de "Ver" */}
                     {viewErrors[doc.id] && (
-                      <span className="text-xs text-red-400 mt-1">
+                      <span className="text-xs text-red-600 mt-1 font-medium">
                         {viewErrors[doc.id]}
                       </span>
                     )}
                     {/* Error inline de "Eliminar" */}
                     {deleteErrors[doc.id] && (
-                      <span className="text-xs text-red-400 mt-1">
+                      <span className="text-xs text-red-600 mt-1 font-medium">
                         {deleteErrors[doc.id]}
                       </span>
                     )}
@@ -278,7 +277,7 @@ export default function PatientDocuments({
                     <Button
                       id={`btn-ver-doc-${doc.id}`}
                       variant="outline"
-                      className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-cyan-400 hover:border-cyan-500/30 text-xs h-8 px-3 transition-all"
+                      className="border-border text-foreground hover:bg-muted text-xs h-8 px-3 transition-all"
                       disabled={!!viewLoading[doc.id]}
                       onClick={() => handleView(doc)}
                     >
@@ -289,7 +288,7 @@ export default function PatientDocuments({
                       <Button
                         id={`btn-eliminar-doc-${doc.id}`}
                         variant="outline"
-                        className="border-red-900/50 text-red-400 hover:bg-red-950 hover:text-red-300 hover:border-red-500/30 text-xs h-8 px-3 transition-all"
+                        className="border-red-200 text-red-655 hover:bg-red-50 hover:text-red-700 text-xs h-8 px-3 transition-all"
                         disabled={!!deleteLoading[doc.id]}
                         onClick={() => handleDelete(doc.id)}
                       >
@@ -305,10 +304,10 @@ export default function PatientDocuments({
       </Card>
 
       {/* ── Formulario de subida ─────────────────────────────────────────── */}
-      <Card className="bg-slate-900 border-slate-800 text-slate-100">
+      <Card className="bg-white border-border text-foreground shadow-sm">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Subir Nuevo Documento</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-foreground text-lg font-bold">Subir Nuevo Documento</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Formatos permitidos: PDF, imágenes, Word, Excel y similares. Máximo 5 MB.
           </CardDescription>
         </CardHeader>
@@ -318,7 +317,7 @@ export default function PatientDocuments({
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="document-type-input"
-                className="text-xs font-bold uppercase tracking-wider text-slate-400"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 Tipo de documento
               </label>
@@ -328,7 +327,7 @@ export default function PatientDocuments({
                 placeholder="Ej: Radiografía, Consentimiento, Historia clínica…"
                 value={documentType}
                 onChange={(e) => setDocumentType(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                className="bg-white border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
               />
             </div>
 
@@ -336,7 +335,7 @@ export default function PatientDocuments({
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="document-file-input"
-                className="text-xs font-bold uppercase tracking-wider text-slate-400"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
               >
                 Archivo
               </label>
@@ -344,18 +343,18 @@ export default function PatientDocuments({
                 id="document-file-input"
                 type="file"
                 ref={fileInputRef}
-                className="text-sm text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700 file:transition-colors cursor-pointer"
+                className="text-sm text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-border file:text-xs file:font-semibold file:bg-white file:text-foreground hover:file:bg-muted file:transition-colors cursor-pointer"
               />
             </div>
 
             {/* Feedback de estado */}
             {uploadStatus.type === "success" && (
-              <div className="bg-teal-500/10 border border-teal-500/20 text-teal-300 rounded-lg px-3 py-2 text-sm">
+              <div className="bg-teal-50 border border-teal-200 text-teal-700 rounded-lg px-3 py-2 text-sm">
                 ✓ {uploadStatus.message}
               </div>
             )}
             {uploadStatus.type === "error" && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg px-3 py-2 text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">
                 ✗ {uploadStatus.message}
               </div>
             )}
@@ -366,7 +365,7 @@ export default function PatientDocuments({
                 id="btn-subir-documento"
                 type="submit"
                 disabled={uploadStatus.type === "loading"}
-                className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-primary hover:bg-primary/90 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
               >
                 {uploadStatus.type === "loading" ? "Subiendo…" : "Subir documento"}
               </Button>
@@ -377,10 +376,10 @@ export default function PatientDocuments({
 
       {/* Modal de confirmación de eliminación */}
       <Dialog open={confirmDeleteId !== null} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null) }}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="bg-white border-border text-foreground shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white">Confirmar Eliminación</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-foreground font-bold text-lg">Confirmar Eliminación</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               El documento dejará de estar disponible en el sistema de forma permanente.
             </DialogDescription>
           </DialogHeader>
@@ -388,7 +387,7 @@ export default function PatientDocuments({
             <Button
               id="btn-cancelar-eliminacion"
               variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="border-border text-foreground hover:bg-muted"
               onClick={() => setConfirmDeleteId(null)}
             >
               Cancelar
@@ -406,29 +405,29 @@ export default function PatientDocuments({
 
       {/* Modal de la papelera */}
       <Dialog open={isTrashOpen} onOpenChange={(open) => { if (!open) setIsTrashOpen(false) }}>
-        <DialogContent id="modal-papelera" className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl">
+        <DialogContent id="modal-papelera" className="bg-white border-border text-foreground max-w-2xl shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-white">Documentos Eliminados</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-foreground font-bold text-lg">Documentos Eliminados</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Historial de archivos borrados. Puedes restaurar cualquier documento de esta lista.
             </DialogDescription>
           </DialogHeader>
 
           <div className="my-4">
             {trashLoading && (
-              <div className="text-center py-8 text-sm text-slate-400">
+              <div className="text-center py-8 text-sm text-muted-foreground">
                 Cargando papelera…
               </div>
             )}
 
             {trashError && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-lg px-3 py-2 text-sm">
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm">
                 ✗ {trashError}
               </div>
             )}
 
             {!trashLoading && !trashError && deletedDocs.length === 0 && (
-              <div className="bg-slate-950 border border-slate-800 rounded-lg p-6 text-sm text-slate-400 text-center">
+              <div className="bg-muted/10 border border-border rounded-lg p-6 text-sm text-muted-foreground text-center">
                 No hay documentos en la papelera.
               </div>
             )}
@@ -438,20 +437,20 @@ export default function PatientDocuments({
                 {deletedDocs.map((doc) => (
                   <li
                     key={doc.id}
-                    className="bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                    className="bg-white border border-border rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs"
                   >
                     <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-white text-sm font-semibold truncate">
+                      <span className="text-foreground text-sm font-semibold truncate">
                         {doc.file_name}
                       </span>
-                      <span className="text-xs text-cyan-400 font-medium">
+                      <span className="text-xs text-primary font-medium">
                         {doc.document_type}
                       </span>
-                      <span className="text-[11px] text-slate-400">
-                        Eliminado el {formatDate(doc.deleted_at || "")} por {doc.deleted_by_name ?? "Administrador desconocido"}
+                      <span className="text-[11px] text-muted-foreground">
+                        Eliminado el {formatDate(doc.deleted_at || "")} por {doc.deleted_by_name ?? "Administrador"}
                       </span>
                       {restoreErrors[doc.id] && (
-                        <span className="text-xs text-red-400 mt-1">
+                        <span className="text-xs text-red-650 mt-1 font-medium">
                           {restoreErrors[doc.id]}
                         </span>
                       )}
@@ -461,7 +460,7 @@ export default function PatientDocuments({
                       <Button
                         id={`btn-restaurar-doc-${doc.id}`}
                         variant="outline"
-                        className="border-emerald-900/50 text-emerald-400 hover:bg-emerald-950 hover:text-emerald-300 hover:border-emerald-500/30 text-xs h-8 px-3 transition-all"
+                        className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 text-xs h-8 px-3 transition-all"
                         disabled={!!restoreLoading[doc.id]}
                         onClick={() => handleRestore(doc.id)}
                       >
@@ -476,7 +475,7 @@ export default function PatientDocuments({
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="border-border text-foreground hover:bg-muted"
               onClick={() => setIsTrashOpen(false)}
             >
               Cerrar

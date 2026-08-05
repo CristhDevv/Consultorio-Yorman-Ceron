@@ -63,7 +63,7 @@ export default function PatientForm({ initialData, onSubmit }: PatientFormProps)
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-4xl mx-auto">
       {errorMsg && (
-        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-200">
+        <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-700">
           <AlertTitle>Error de validación</AlertTitle>
           <AlertDescription>{errorMsg}</AlertDescription>
         </Alert>
@@ -71,140 +71,140 @@ export default function PatientForm({ initialData, onSubmit }: PatientFormProps)
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Datos Personales */}
-        <Card className="bg-slate-900 border-slate-800 text-slate-100">
+        <Card className="bg-white border-border text-foreground shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white text-lg">Información Personal</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-foreground text-lg">Información Personal</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Filiación básica y datos de contacto del paciente.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="fullName" className="text-slate-300">Nombre Completo *</Label>
+              <Label htmlFor="fullName" className="text-foreground font-medium">Nombre Completo *</Label>
               <Input
                 id="fullName"
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Juan Pérez"
-                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+                className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="documentId" className="text-slate-300">Cédula o Documento *</Label>
+              <Label htmlFor="documentId" className="text-foreground font-medium">Cédula o Documento *</Label>
               <Input
                 id="documentId"
                 required
                 value={documentId}
                 onChange={(e) => setDocumentId(e.target.value)}
                 placeholder="1723456789"
-                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+                className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="birthDate" className="text-slate-300">Fecha de Nacimiento *</Label>
+              <Label htmlFor="birthDate" className="text-foreground font-medium">Fecha de Nacimiento *</Label>
               <Input
                 id="birthDate"
                 type="date"
                 required
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value)}
-                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+                className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="phone" className="text-slate-300">Teléfono de Contacto</Label>
+              <Label htmlFor="phone" className="text-foreground font-medium">Teléfono de Contacto</Label>
               <Input
                 id="phone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="0998765432"
-                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+                className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email" className="text-slate-300">Correo Electrónico</Label>
+              <Label htmlFor="email" className="text-foreground font-medium">Correo Electrónico</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="juan@example.com"
-                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+                className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="address" className="text-slate-300">Dirección</Label>
+              <Label htmlFor="address" className="text-foreground font-medium">Dirección</Label>
               <Input
                 id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Av. 10 de Agosto y Colón"
-                className="bg-slate-950 border-slate-800 text-white focus:border-cyan-500"
+                className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Antecedentes Clínicos */}
-        <Card className="bg-slate-900 border-slate-800 text-slate-100">
+        <Card className="bg-white border-border text-foreground shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white text-lg">Historial y Antecedentes Clínicos</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-foreground text-lg">Historial y Antecedentes Clínicos</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Datos críticos de salud obligatorios antes de realizar cualquier intervención.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="allergies" className="text-red-400 font-semibold">Alergias conocidas</Label>
+              <Label htmlFor="allergies" className="text-red-650 font-bold">Alergias conocidas</Label>
               <textarea
                 id="allergies"
                 value={allergies}
                 onChange={(e) => setAllergies(e.target.value)}
                 placeholder="Ej: Alérgico a la Penicilina, látex, etc. Dejar vacío si no reporta."
                 rows={3}
-                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-red-500 transition-colors"
+                className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all placeholder-muted-foreground/60"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="diseases" className="text-amber-400 font-semibold">Enfermedades crónicas / sistémicas</Label>
+              <Label htmlFor="diseases" className="text-amber-650 font-bold">Enfermedades crónicas / sistémicas</Label>
               <textarea
                 id="diseases"
                 value={diseases}
                 onChange={(e) => setDiseases(e.target.value)}
                 placeholder="Ej: Hipertensión arterial, Diabetes tipo 2, Hemofilia, etc."
                 rows={3}
-                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all placeholder-muted-foreground/60"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="currentMedications" className="text-cyan-400 font-semibold">Medicamentos Actuales</Label>
+              <Label htmlFor="currentMedications" className="text-teal-650 font-bold">Medicamentos Actuales</Label>
               <textarea
                 id="currentMedications"
                 value={currentMedications}
                 onChange={(e) => setCurrentMedications(e.target.value)}
                 placeholder="Medicamentos que toma actualmente con dosis."
                 rows={2}
-                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder-muted-foreground/60"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="medicalObservations" className="text-slate-300">Observaciones Generales</Label>
+              <Label htmlFor="medicalObservations" className="text-foreground font-medium">Observaciones Generales</Label>
               <textarea
                 id="medicalObservations"
                 value={medicalObservations}
                 onChange={(e) => setMedicalObservations(e.target.value)}
                 placeholder="Cualquier otra observación relevante para el expediente clínico."
                 rows={2}
-                className="w-full bg-slate-950 border border-slate-800 text-white rounded-lg p-2.5 text-sm outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder-muted-foreground/60"
               />
             </div>
           </CardContent>
@@ -216,14 +216,14 @@ export default function PatientForm({ initialData, onSubmit }: PatientFormProps)
           type="button"
           variant="outline"
           onClick={() => router.back()}
-          className="border-slate-800 text-slate-300 hover:bg-slate-800"
+          className="border-border text-foreground hover:bg-muted"
         >
           Cancelar
         </Button>
         <Button
           type="submit"
           disabled={loading}
-          className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white"
+          className="bg-primary hover:bg-primary/90 text-white font-medium shadow-xs"
         >
           {loading ? "Procesando..." : initialData ? "Guardar Cambios" : "Registrar Paciente"}
         </Button>
