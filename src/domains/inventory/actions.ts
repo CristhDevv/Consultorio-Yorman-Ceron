@@ -135,3 +135,81 @@ export async function registerInventoryMovement(
     },
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 3. createInventoryProduct
+// ═══════════════════════════════════════════════════════════════════════════
+export type ProductInput = {
+  name: string
+  unit: string
+  minStock: number
+  currentStock: number
+}
+
+export async function createInventoryProduct(
+  input: ProductInput
+): Promise<ActionResult<InventoryProduct>> {
+  const supabase = await createClient()
+
+  // — Validar sesión ─────────────────────────────────────────────────────────
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  // — Validar rol administrador en tiempo real contra public.profiles ────────
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError || profile?.role !== "administrador") {
+    return {
+      success: false,
+      error: "Acceso denegado. Solo los administradores pueden crear nuevos productos en el inventario.",
+    }
+  }
+
+  // — Validaciones de input (defensa adicional) ──────────────────────────────
+  if (!input.name || input.name.trim() === "") {
+    return { success: false, error: "El nombre del producto no puede estar vacío." }
+  }
+  if (!input.unit || input.unit.trim() === "") {
+    return { success: false, error: "Debe especificar una unidad de medida (ej: Unidades, Cajas)." }
+  }
+  if (!Number.isInteger(input.minStock) || input.minStock < 0) {
+    return { success: false, error: "El stock mínimo debe ser un número entero mayor o igual a cero." }
+  }
+  if (!Number.isInteger(input.currentStock) || input.currentStock < 0) {
+    return { success: false, error: "El stock inicial debe ser un número entero mayor o igual a cero." }
+  }
+
+  // — Insertar producto en la base de datos ──────────────────────────────────
+  const { data, error } = await supabase
+    .from("inventory_products")
+    .insert({
+      name: input.name.trim(),
+      unit: input.unit.trim(),
+      min_stock: input.minStock,
+      current_stock: input.currentStock,
+      created_by: user.id,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath("/inventory")
+
+  return {
+    success: true,
+    data: data as InventoryProduct,
+  }
+}

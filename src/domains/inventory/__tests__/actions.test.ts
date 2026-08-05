@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { registerInventoryMovement } from '../actions';
+import { registerInventoryMovement, createInventoryProduct } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -290,5 +290,188 @@ describe('registerInventoryMovement', () => {
 
     expect(mockSupabase.rpc).not.toHaveBeenCalled();
     expect(revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe('createInventoryProduct', () => {
+  let mockSupabase: MockSupabase;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockSupabase = {
+      auth: { getUser: vi.fn() },
+      from: vi.fn(),
+      rpc:  vi.fn(),
+    };
+
+    vi.mocked(createClient).mockResolvedValue(
+      mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>
+    );
+
+    // Por defecto: sesión autenticada como administrador
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: ADMIN_USER },
+      error: null,
+    });
+  });
+
+  it('debe crear un producto exitosamente si el usuario es administrador', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { role: 'administrador' },
+      error: null,
+    });
+
+    const mockInsert = vi.fn().mockReturnThis();
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockSingleResponse = vi.fn().mockResolvedValue({
+      data: {
+        id: 'new-product-uuid',
+        name: 'Guantes de Nitrilo',
+        unit: 'Cajas',
+        min_stock: 5,
+        current_stock: 50,
+      },
+      error: null,
+    });
+
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: mockSingle,
+            }),
+          }),
+        };
+      }
+      if (tableName === 'inventory_products') {
+        return {
+          insert: mockInsert,
+          select: mockSelect,
+          single: mockSingleResponse,
+        };
+      }
+      return {};
+    });
+
+    const result = await createInventoryProduct({
+      name: 'Guantes de Nitrilo',
+      unit: 'Cajas',
+      minStock: 5,
+      currentStock: 50,
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: 'new-product-uuid',
+        name: 'Guantes de Nitrilo',
+        unit: 'Cajas',
+        min_stock: 5,
+        current_stock: 50,
+      },
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith({
+      name: 'Guantes de Nitrilo',
+      unit: 'Cajas',
+      min_stock: 5,
+      current_stock: 50,
+      created_by: ADMIN_USER.id,
+    });
+
+    expect(revalidatePath).toHaveBeenCalledWith('/inventory');
+  });
+
+  it('debe fallar si el usuario no es administrador', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { role: 'odontologo' },
+      error: null,
+    });
+
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: mockSingle,
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const result = await createInventoryProduct({
+      name: 'Guantes de Nitrilo',
+      unit: 'Cajas',
+      minStock: 5,
+      currentStock: 50,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Acceso denegado. Solo los administradores pueden crear nuevos productos en el inventario.',
+    });
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('debe fallar si la sesión no está activa', async () => {
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+
+    const result = await createInventoryProduct({
+      name: 'Guantes de Nitrilo',
+      unit: 'Cajas',
+      minStock: 5,
+      currentStock: 50,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'No hay sesión activa. Por favor inicia sesión.',
+    });
+  });
+
+  it('debe fallar si las validaciones básicas no se cumplen', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { role: 'administrador' },
+      error: null,
+    });
+
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: mockSingle,
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const result1 = await createInventoryProduct({
+      name: '',
+      unit: 'Cajas',
+      minStock: 5,
+      currentStock: 50,
+    });
+    expect(result1.success).toBe(false);
+    expect(result1.error).toBe('El nombre del producto no puede estar vacío.');
+
+    const result2 = await createInventoryProduct({
+      name: 'Test',
+      unit: 'Cajas',
+      minStock: -1,
+      currentStock: 50,
+    });
+    expect(result2.success).toBe(false);
+    expect(result2.error).toBe('El stock mínimo debe ser un número entero mayor o igual a cero.');
   });
 });

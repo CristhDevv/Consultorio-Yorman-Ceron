@@ -4,6 +4,7 @@ import { createClient } from "@/shared/lib/supabase/server"
 import { getInventoryProducts } from "@/domains/inventory/actions"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
 import MovementForm from "@/domains/inventory/components/MovementForm"
+import ProductForm from "@/domains/inventory/components/ProductForm"
 
 export const metadata = {
   title: "Catálogo de Inventario - Consultorio Odontológico Yorman Cerón",
@@ -103,8 +104,11 @@ export default async function InventoryPage() {
         </Table>
       </div>
 
-      {/* ── Formulario de registro de movimientos ── */}
-      <MovementForm products={products} />
+      {/* ── Formularios de Gestión de Inventario ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ProductForm />
+        <MovementForm products={products} />
+      </div>
     </div>
   )
 }
