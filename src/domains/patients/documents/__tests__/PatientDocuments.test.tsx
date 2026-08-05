@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import PatientDocuments from '../components/PatientDocuments';
@@ -205,6 +205,10 @@ describe('PatientDocuments Component', () => {
 
     expect(screen.getByText('Documentos Eliminados')).toBeInTheDocument();
     expect(mockOnGetDeletedDocuments).toHaveBeenCalledWith('patient-1');
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando papelera…')).not.toBeInTheDocument();
+    });
   });
 
   it('8. should display loading message while fetching deleted documents', async () => {
@@ -233,7 +237,13 @@ describe('PatientDocuments Component', () => {
     expect(screen.getByText('Cargando papelera…')).toBeInTheDocument();
 
     // Limpieza
-    resolvePromise({ success: true, data: [] });
+    await act(async () => {
+      resolvePromise({ success: true, data: [] });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando papelera…')).not.toBeInTheDocument();
+    });
   });
 
   it('9. should display error message if fetching deleted documents fails', async () => {

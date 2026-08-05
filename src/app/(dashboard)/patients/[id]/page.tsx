@@ -13,6 +13,14 @@ import {
   restorePatientDocument,
 } from "@/domains/patients/documents/actions"
 import PatientDocuments from "@/domains/patients/documents/components/PatientDocuments"
+import {
+  getPatientImages,
+  uploadPatientImage,
+  deletePatientImage,
+  getDeletedPatientImages,
+  restorePatientImage,
+} from "@/domains/imaging/actions"
+import PatientImaging from "@/domains/imaging/components/PatientImaging"
 import PaymentHistoryView from "@/domains/finance/components/PaymentHistoryView"
 
 export const metadata = {
@@ -56,6 +64,10 @@ export default async function PatientDetailPage({ params }: PageProps) {
   const documentsResult = await getPatientDocuments(id)
   const initialDocuments = documentsResult.success ? documentsResult.data : []
 
+  // — Imágenes del paciente ─────────────────────────────────────────────────
+  const imagesResult = await getPatientImages(id)
+  const initialImages = imagesResult.success ? imagesResult.data : []
+
   // — Server Action wrappers inline ─────────────────────────────────────────
   async function handleUpload(formData: FormData) {
     "use server"
@@ -80,6 +92,26 @@ export default async function PatientDetailPage({ params }: PageProps) {
   async function handleRestore(documentId: string) {
     "use server"
     return restorePatientDocument(documentId, id)
+  }
+
+  async function handleUploadImage(formData: FormData) {
+    "use server"
+    return uploadPatientImage(formData)
+  }
+
+  async function handleDeleteImage(imageId: string) {
+    "use server"
+    return deletePatientImage(imageId, id)
+  }
+
+  async function handleGetDeletedImages() {
+    "use server"
+    return getDeletedPatientImages(id)
+  }
+
+  async function handleRestoreImage(imageId: string) {
+    "use server"
+    return restorePatientImage(imageId, id)
   }
 
   // — Server Action wrapper para el odontograma (sin cambios) ───────────────
@@ -128,6 +160,16 @@ export default async function PatientDetailPage({ params }: PageProps) {
         onDelete={handleDelete}
         onGetDeletedDocuments={handleGetDeletedDocuments}
         onRestore={handleRestore}
+      />
+
+      <PatientImaging
+        patientId={id}
+        initialImages={initialImages}
+        canDelete={canDelete}
+        onUpload={handleUploadImage}
+        onDelete={handleDeleteImage}
+        onGetDeletedImages={handleGetDeletedImages}
+        onRestore={handleRestoreImage}
       />
 
       {/* Historial Financiero Consolidado */}
