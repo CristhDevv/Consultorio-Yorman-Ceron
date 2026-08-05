@@ -108,6 +108,11 @@ export async function createStaffMember(input: {
     return { success: false, error: signUpError.message }
   }
 
+  // Controlar éxito falso por correo duplicado (obfuscación de Supabase)
+  if (authData.user && (!authData.user.identities || authData.user.identities.length === 0)) {
+    return { success: false, error: "El correo electrónico ya está registrado en el sistema." }
+  }
+
   const newUserId = authData.user?.id
 
   if (!newUserId) {

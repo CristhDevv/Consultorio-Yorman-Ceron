@@ -1,9 +1,14 @@
 import { vi, describe, it, expect, beforeEach } from "vitest"
 import { getStaffMembers, createStaffMember, demoteStaffMember, changeStaffRole } from "../actions"
 import { createClient } from "@/shared/lib/supabase/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 
 vi.mock("@/shared/lib/supabase/server", () => ({
+  createClient: vi.fn(),
+}))
+
+vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(),
 }))
 
@@ -97,6 +102,114 @@ describe("Staff Actions", () => {
       })
 
       await expect(getStaffMembers()).rejects.toThrow("Acceso denegado. Solo administradores pueden listar personal.")
+    })
+  })
+
+  describe("createStaffMember", () => {
+    it("debe registrar un odontologo exitosamente si el correo no esta duplicado", async () => {
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: { role: "administrador" },
+        error: null,
+      })
+
+      mockSupabase.from.mockImplementation((tableName: string) => {
+        if (tableName === "profiles") {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: mockSingle,
+              }),
+            }),
+            update: () => ({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
+          }
+        }
+        return {}
+      })
+
+      const mockSignUp = vi.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: "new-staff-id",
+            identities: [{ id: "identity-1" }],
+          },
+        },
+        error: null,
+      })
+
+      vi.mocked(createSupabaseClient).mockReturnValue({
+        auth: { signUp: mockSignUp },
+      } as any)
+
+      const result = await createStaffMember({
+        fullName: "Dr. Alejandro Díaz",
+        email: "alejandro@correo.com",
+        role: "odontologo",
+        phone: "3001234567",
+      })
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.id).toBe("new-staff-id")
+        expect(result.data.full_name).toBe("Dr. Alejandro Díaz")
+      }
+      expect(mockSignUp).toHaveBeenCalledWith({
+        email: "alejandro@correo.com",
+        password: "StaffPassword123!",
+        options: {
+          data: {
+            full_name: "Dr. Alejandro Díaz",
+            role: "odontologo",
+          },
+        },
+      })
+      expect(revalidatePath).toHaveBeenCalledWith("/staff")
+    })
+
+    it("debe fallar si el correo ya esta registrado en el sistema", async () => {
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: { role: "administrador" },
+        error: null,
+      })
+
+      mockSupabase.from.mockImplementation((tableName: string) => {
+        if (tableName === "profiles") {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: mockSingle,
+              }),
+            }),
+          }
+        }
+        return {}
+      })
+
+      const mockSignUp = vi.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: "existing-id",
+            identities: [], // Empty identities array = duplicate email
+          },
+        },
+        error: null,
+      })
+
+      vi.mocked(createSupabaseClient).mockReturnValue({
+        auth: { signUp: mockSignUp },
+      } as any)
+
+      const result = await createStaffMember({
+        fullName: "Dr. Alejandro Díaz",
+        email: "alejandro@correo.com",
+        role: "odontologo",
+      })
+
+      expect(result).toEqual({
+        success: false,
+        error: "El correo electrónico ya está registrado en el sistema.",
+      })
     })
   })
 
