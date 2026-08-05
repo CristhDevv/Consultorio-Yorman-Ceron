@@ -7,7 +7,7 @@ import MovementForm from "@/domains/inventory/components/MovementForm"
 import ProductForm from "@/domains/inventory/components/ProductForm"
 
 export const metadata = {
-  title: "Catálogo de Inventario - Consultorio Odontológico Yorman Cerón",
+  title: "Catálogo de Inventario - Consultorio Odontológico",
   description: "Visualización y gestión del stock del consultorio.",
 }
 

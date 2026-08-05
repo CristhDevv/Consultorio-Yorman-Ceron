@@ -3,7 +3,7 @@ import { createPatient, type PatientInput } from "@/domains/patients/actions"
 import PatientForm from "@/domains/patients/components/PatientForm"
 
 export const metadata = {
-  title: "Nuevo Paciente - Consultorio Odontológico Yorman Cerón",
+  title: "Nuevo Paciente - Consultorio Odontológico",
   description: "Registrar una nueva ficha médica en el sistema.",
 }
 

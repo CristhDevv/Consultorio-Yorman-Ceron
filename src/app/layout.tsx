@@ -10,7 +10,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Consultorio Odontológico Yorman Cerón",
+  title: "Consultorio Odontológico",
   description: "Sistema integral de gestión de citas, pacientes y registros clínicos.",
 }
 

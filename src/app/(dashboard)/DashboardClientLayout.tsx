@@ -61,8 +61,8 @@ function Sidebar({ role, fullName, email, open, onClose }: SidebarProps) {
             <Stethoscope className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-[#1E293B] truncate leading-tight">Yorman Cerón</p>
-            <p className="text-[10px] text-[#64748B] font-medium uppercase tracking-wider">Odontología</p>
+            <p className="text-sm font-bold text-[#1E293B] truncate leading-tight">Consultorio</p>
+            <p className="text-[10px] text-[#64748B] font-medium uppercase tracking-wider">Odontológico</p>
           </div>
           <button
             className="ml-auto md:hidden text-[#64748B] hover:text-[#1E293B] transition-colors"
@@ -155,7 +155,7 @@ export default function DashboardClientLayout({
               style={{ background: "linear-gradient(135deg, #00C8B4 0%, #00A896 100%)" }}>
               <Stethoscope className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-bold text-[#1E293B]">Yorman Cerón</span>
+            <span className="text-sm font-bold text-[#1E293B]">Consultorio Odontológico</span>
           </div>
         </div>
         <main className="p-6 md:p-8">

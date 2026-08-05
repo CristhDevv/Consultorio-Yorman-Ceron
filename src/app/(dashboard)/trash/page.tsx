@@ -5,7 +5,7 @@ import { getAllDeletedDocuments, restorePatientDocument } from "@/domains/patien
 import TrashDashboard from "@/domains/patients/documents/components/TrashDashboard"
 
 export const metadata = {
-  title: "Papelera de Documentos - Consultorio Odontológico Yorman Cerón",
+  title: "Papelera de Documentos - Consultorio Odontológico",
   description: "Auditoría general y recuperación de documentos clínicos.",
 }
 

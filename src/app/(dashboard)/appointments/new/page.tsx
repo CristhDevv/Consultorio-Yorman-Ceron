@@ -4,7 +4,7 @@ import { createClient } from "@/shared/lib/supabase/server"
 import AppointmentForm from "@/domains/appointments/components/AppointmentForm"
 
 export const metadata = {
-  title: "Nueva Cita - Consultorio Odontológico Yorman Cerón",
+  title: "Nueva Cita - Consultorio Odontológico",
   description: "Programar una nueva cita odontológica.",
 }
 

@@ -3,7 +3,7 @@ import { getPatients } from "@/domains/patients/actions"
 import PatientTable from "@/domains/patients/components/PatientTable"
 
 export const metadata = {
-  title: "Listado de Pacientes - Consultorio Odontológico Yorman Cerón",
+  title: "Listado de Pacientes - Consultorio Odontológico",
   description: "Búsqueda y gestión de fichas clínicas de pacientes.",
 }
 

@@ -5,7 +5,7 @@ import { getCommunicationLogs, getPatientsWithCommunicationLogs } from "@/domain
 import CommunicationLogsDashboard from "@/domains/communications/components/CommunicationLogsDashboard"
 
 export const metadata = {
-  title: "Historial de Comunicaciones - Consultorio Odontológico Yorman Cerón",
+  title: "Historial de Comunicaciones - Consultorio Odontológico",
   description: "Administración y seguimiento de notificaciones enviadas a pacientes.",
 }
 

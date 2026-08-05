@@ -3,7 +3,7 @@ import { getAppointments } from "@/domains/appointments/actions"
 import AppointmentsTable from "@/domains/appointments/components/AppointmentsTable"
 
 export const metadata = {
-  title: "Agenda de Citas - Consultorio Odontológico Yorman Cerón",
+  title: "Agenda de Citas - Consultorio Odontológico",
   description: "Visualiza y gestiona la agenda de citas del consultorio.",
 }
 

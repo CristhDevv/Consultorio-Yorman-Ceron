@@ -24,7 +24,7 @@ import PatientImaging from "@/domains/imaging/components/PatientImaging"
 import PaymentHistoryView from "@/domains/finance/components/PaymentHistoryView"
 
 export const metadata = {
-  title: "Detalle del Paciente - Consultorio Odontológico Yorman Cerón",
+  title: "Detalle del Paciente - Consultorio Odontológico",
   description: "Ficha médica y expediente clínico de salud.",
 }
 

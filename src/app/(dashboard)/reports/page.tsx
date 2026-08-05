@@ -5,7 +5,7 @@ import { getFinancialReport } from "@/domains/reports/actions"
 import ReportsDashboard from "@/domains/reports/components/ReportsDashboard"
 
 export const metadata = {
-  title: "Reportes Financieros - Consultorio Odontológico Yorman Cerón",
+  title: "Reportes Financieros - Consultorio Odontológico",
   description: "Reporte consolidado de agregación financiera y desglose de cobros.",
 }
 

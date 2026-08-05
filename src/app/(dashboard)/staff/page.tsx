@@ -5,7 +5,7 @@ import { getStaffMembers } from "@/domains/staff/actions"
 import StaffDashboard from "@/domains/staff/components/StaffDashboard"
 
 export const metadata = {
-  title: "Gestión de Personal - Consultorio Odontológico Yorman Cerón",
+  title: "Gestión de Personal - Consultorio Odontológico",
   description: "Administración de odontólogos y administradores del consultorio.",
 }
 

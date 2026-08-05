@@ -3,7 +3,7 @@ import { getPatientById, updatePatient, type PatientInput } from "@/domains/pati
 import PatientForm from "@/domains/patients/components/PatientForm"
 
 export const metadata = {
-  title: "Editar Ficha de Paciente - Consultorio Odontológico Yorman Cerón",
+  title: "Editar Ficha de Paciente - Consultorio Odontológico",
   description: "Modificar los antecedentes e información de contacto.",
 }
 
