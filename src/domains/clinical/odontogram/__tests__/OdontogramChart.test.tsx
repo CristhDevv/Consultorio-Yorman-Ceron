@@ -20,9 +20,9 @@ describe('OdontogramChart Component', () => {
     // Click tooth 11
     fireEvent.click(screen.getByText('11'));
 
-    // Panel shows with tooth number
-    expect(screen.getByRole('heading', { name: /Pieza Dental/i })).toBeInTheDocument();
-    expect(screen.getByText('#11')).toBeInTheDocument();
+    // Panel shows with the exact anatomical tooth name (tooth 11 = Incisivo Central Superior Derecho)
+    expect(screen.getByRole('heading', { name: /Incisivo Central Superior Derecho/i })).toBeInTheDocument();
+    expect(screen.getByText(/Diente #11/i)).toBeInTheDocument();
     expect(screen.queryByText(/Ninguna pieza seleccionada/i)).not.toBeInTheDocument();
 
     // Default status is 'sano' and notes textarea is empty
@@ -76,8 +76,8 @@ describe('OdontogramChart Component', () => {
       expect(screen.getByText(/¡Registro guardado correctamente!/i)).toBeInTheDocument();
     });
 
-    // Panel closes — tooth deselected
-    expect(screen.queryByRole('heading', { name: /Pieza Dental/i })).not.toBeInTheDocument();
+    // Panel closes — tooth deselected; the anatomical name heading should be gone
+    expect(screen.queryByRole('heading', { name: /Incisivo Central Superior Izquierdo/i })).not.toBeInTheDocument();
     expect(screen.getByText(/Ninguna pieza seleccionada/i)).toBeInTheDocument();
   });
 
@@ -97,9 +97,9 @@ describe('OdontogramChart Component', () => {
       expect(screen.getByText(/Error de prueba al guardar el registro\./i)).toBeInTheDocument();
     });
 
-    // Tooth remains selected — panel still visible
-    expect(screen.getByRole('heading', { name: /Pieza Dental/i })).toBeInTheDocument();
-    expect(screen.getByText('#11')).toBeInTheDocument();
+    // Tooth remains selected — panel still visible with anatomical name
+    expect(screen.getByRole('heading', { name: /Incisivo Central Superior Derecho/i })).toBeInTheDocument();
+    expect(screen.getByText(/Diente #11/i)).toBeInTheDocument();
     expect(screen.queryByText(/Ninguna pieza seleccionada/i)).not.toBeInTheDocument();
   });
 });

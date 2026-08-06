@@ -28,7 +28,7 @@ export async function getOdontogramByPatient(patientId: string) {
   return { success: true, data: data || [] }
 }
 
-// 2. Crear un nuevo registro en el odontograma del paciente
+// 2. Crear o actualizar un registro en el odontograma del paciente
 export async function createOdontogramRecord(input: OdontogramRecordInput) {
   const supabase = await createClient()
 
@@ -37,6 +37,33 @@ export async function createOdontogramRecord(input: OdontogramRecordInput) {
     return { success: false, error: "Sesión no iniciada" }
   }
 
+  // Usamos upsert para actualizar si ya existe el registro para ese diente y cara.
+  // Los dos índices únicos parciales de la BD cubren:
+  //   - (patient_id, tooth_number, tooth_face) WHERE tooth_face IS NOT NULL
+  //   - (patient_id, tooth_number)             WHERE tooth_face IS NULL
+  // Supabase no admite onConflict con índices parciales directamente, así que
+  // primero intentamos eliminar el registro existente y luego insertamos el nuevo.
+  // Esto garantiza que el estado visible sea siempre el último guardado.
+
+  if (input.tooth_face === null) {
+    // Registro general (sano, ausente, corona, etc.): eliminar el existente primero
+    await supabase
+      .from("odontogram_records")
+      .delete()
+      .eq("patient_id", input.patient_id)
+      .eq("tooth_number", input.tooth_number)
+      .is("tooth_face", null)
+  } else {
+    // Registro por cara (caries, obturado, etc.): eliminar el existente para esa cara
+    await supabase
+      .from("odontogram_records")
+      .delete()
+      .eq("patient_id", input.patient_id)
+      .eq("tooth_number", input.tooth_number)
+      .eq("tooth_face", input.tooth_face)
+  }
+
+  // Insertar el nuevo registro actualizado
   const { error } = await supabase.from("odontogram_records").insert({
     patient_id: input.patient_id,
     tooth_number: input.tooth_number,
@@ -47,16 +74,9 @@ export async function createOdontogramRecord(input: OdontogramRecordInput) {
   })
 
   if (error) {
-    if (error.code === "23505") {
-      return {
-        success: false,
-        error: "No es posible registrar este estado clínico. La pieza dental ya cuenta con un diagnóstico de diente completo registrado (ausente o extracción indicada), o bien el nuevo estado entra en conflicto con el registro existente de esta pieza."
-      }
-    }
     return { success: false, error: error.message }
   }
 
-  // Se revalida la ruta del detalle del paciente
   revalidatePath(`/patients/${input.patient_id}`)
   return { success: true }
 }
