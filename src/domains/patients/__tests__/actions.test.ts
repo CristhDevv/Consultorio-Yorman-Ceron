@@ -76,6 +76,7 @@ describe('Patients Actions', () => {
         current_medications: 'None',
         medical_observations: 'None',
         created_by: 'user-123',
+        branch_id: null,
       });
       expect(revalidatePath).toHaveBeenCalledWith('/patients');
     });

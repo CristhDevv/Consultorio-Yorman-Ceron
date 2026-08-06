@@ -9,12 +9,21 @@ import { Label } from "@/shared/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert"
 
+import { BranchInfo } from "@/domains/branches/constants"
+
 interface PatientFormProps {
   initialData?: PatientInput & { id: string }
   onSubmit: (data: PatientInput) => Promise<{ success: boolean; error?: string }>
+  allowedBranches?: BranchInfo[]
+  defaultBranchId?: string | null
 }
 
-export default function PatientForm({ initialData, onSubmit }: PatientFormProps) {
+export default function PatientForm({
+  initialData,
+  onSubmit,
+  allowedBranches,
+  defaultBranchId,
+}: PatientFormProps) {
   const router = useRouter()
   
   const [fullName, setFullName] = useState(initialData?.full_name || "")
@@ -29,6 +38,9 @@ export default function PatientForm({ initialData, onSubmit }: PatientFormProps)
   const [diseases, setDiseases] = useState(initialData?.diseases || "")
   const [currentMedications, setCurrentMedications] = useState(initialData?.current_medications || "")
   const [medicalObservations, setMedicalObservations] = useState(initialData?.medical_observations || "")
+  
+  // Sucursal (Solo para creación)
+  const [branchId, setBranchId] = useState<string | null>(initialData?.branch_id || defaultBranchId || null)
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -49,6 +61,7 @@ export default function PatientForm({ initialData, onSubmit }: PatientFormProps)
       diseases,
       current_medications: currentMedications,
       medical_observations: medicalObservations,
+      branch_id: branchId,
     })
 
     if (result.success) {
@@ -148,6 +161,26 @@ export default function PatientForm({ initialData, onSubmit }: PatientFormProps)
                 className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
+
+            {!initialData && allowedBranches && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="branchId" className="text-foreground font-medium">Sucursal *</Label>
+                <select
+                  id="branchId"
+                  value={branchId || ""}
+                  onChange={(e) => setBranchId(e.target.value || null)}
+                  className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
+                  required
+                >
+                  <option value="" disabled>Seleccione una sucursal</option>
+                  {allowedBranches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -7,12 +7,22 @@ vi.mock('@/shared/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
 
+interface MockSupabase {
+  from: ReturnType<typeof vi.fn>;
+}
+
+interface GlobalWithMocks {
+  _mockGet: ReturnType<typeof vi.fn>;
+  _mockSet: ReturnType<typeof vi.fn>;
+}
+
 // Initialize the mock on next/headers using globalThis to prevent hoisting ReferenceError
 vi.mock('next/headers', () => {
   const getFn = vi.fn();
   const setFn = vi.fn();
-  (globalThis as any)._mockGet = getFn;
-  (globalThis as any)._mockSet = setFn;
+  const g = globalThis as unknown as GlobalWithMocks;
+  g._mockGet = getFn;
+  g._mockSet = setFn;
   return {
     cookies: vi.fn().mockReturnValue({
       get: getFn,
@@ -22,14 +32,15 @@ vi.mock('next/headers', () => {
 });
 
 describe('Branches Session Logic', () => {
-  let mockSupabase: any;
-  let mockGet: any;
-  let mockSet: any;
+  let mockSupabase: MockSupabase;
+  let mockGet: ReturnType<typeof vi.fn>;
+  let mockSet: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGet = (globalThis as any)._mockGet;
-    mockSet = (globalThis as any)._mockSet;
+    const g = globalThis as unknown as GlobalWithMocks;
+    mockGet = g._mockGet;
+    mockSet = g._mockSet;
     mockGet.mockReset();
     mockSet.mockReset();
 
@@ -37,7 +48,9 @@ describe('Branches Session Logic', () => {
       from: vi.fn(),
     };
 
-    vi.mocked(createClient).mockResolvedValue(mockSupabase as any);
+    vi.mocked(createClient).mockResolvedValue(
+      mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>
+    );
   });
 
   describe('getAllowedBranches', () => {

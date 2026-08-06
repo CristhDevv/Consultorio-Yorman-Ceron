@@ -14,6 +14,7 @@ export interface PatientInput {
   diseases: string
   current_medications: string
   medical_observations: string
+  branch_id?: string | null
 }
 
 // 1. Obtener listado de pacientes con buscador
@@ -75,6 +76,7 @@ export async function createPatient(input: PatientInput) {
     current_medications: input.current_medications || null,
     medical_observations: input.medical_observations || null,
     created_by: user.id,
+    branch_id: input.branch_id || null,
   })
 
   if (error) {
