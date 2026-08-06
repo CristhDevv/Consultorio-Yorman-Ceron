@@ -2,6 +2,7 @@ import React from "react"
 import Link from "next/link"
 import { getAppointmentById } from "@/domains/appointments/actions"
 import { createClient } from "@/shared/lib/supabase/server"
+import { getAllowedBranches } from "@/domains/branches/session"
 import AppointmentEditForm from "@/domains/appointments/components/AppointmentEditForm"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card"
@@ -70,8 +71,22 @@ export default async function EditAppointmentPage({ params }: PageProps) {
     )
   }
 
-  // Caso 3: Cita editable — obtener odontólogos para el selector
+  // Caso 3: Cita editable — obtener odontólogos y sucursales permitidas
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let role = ""
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    role = profile?.role || ""
+  }
+
+  const allowedBranches = user ? await getAllowedBranches(user.id, role) : []
+
   const { data: dentistsData } = await supabase
     .from("profiles")
     .select("id, full_name")
@@ -113,6 +128,8 @@ export default async function EditAppointmentPage({ params }: PageProps) {
         initialDurationMinutes={appointment.duration_minutes}
         initialReason={appointment.reason ?? ""}
         initialNotes={appointment.notes ?? ""}
+        allowedBranches={allowedBranches}
+        initialBranchId={appointment.branch_id}
       />
     </div>
   )

@@ -22,6 +22,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('../actions', () => ({
   createAppointment: vi.fn(),
   getAvailableSlotsForDentistAndDate: vi.fn(),
+  getBranchesForDentist: vi.fn().mockResolvedValue([]),
 }));
 
 describe('AppointmentForm Component', () => {
@@ -177,6 +178,7 @@ describe('AppointmentForm Component', () => {
         status: 'programada',
         reason: '',
         notes: '',
+        branch_id: null,
       });
     });
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getAvailableSlotsForDentistAndDate, createAppointment } from "../actions"
+import { getAvailableSlotsForDentistAndDate, createAppointment, getBranchesForDentist } from "../actions"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
@@ -27,12 +27,20 @@ interface Slot {
   duration_minutes: number
 }
 
+interface AllowedBranch {
+  id: string
+  name: string
+}
+
 interface AppointmentFormProps {
   patients: Patient[]
   dentists: Dentist[]
+  allowedBranches?: AllowedBranch[]
+  defaultBranchId?: string | null
 }
 
-export default function AppointmentForm({ patients, dentists }: AppointmentFormProps) {
+
+export default function AppointmentForm({ patients, dentists, allowedBranches, defaultBranchId }: AppointmentFormProps) {
   const router = useRouter()
 
   // Form State
@@ -40,6 +48,8 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
   const [patientSearch, setPatientSearch] = useState("")
   const [selectedDentistId, setSelectedDentistId] = useState("")
   const [selectedDate, setSelectedDate] = useState("")
+  const [branchId, setBranchId] = useState(defaultBranchId || "")
+  const [branchesList, setBranchesList] = useState<AllowedBranch[]>(allowedBranches || [])
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [reason, setReason] = useState("")
   const [notes, setNotes] = useState("")
@@ -59,10 +69,36 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
         p.document_id.includes(patientSearch)
       ).slice(0, 5)
 
-  // Fetch slots when dentist and date change
+  // Fetch slots and dentist branches when dentist and date change
   useEffect(() => {
-    async function fetchSlots() {
-      if (!selectedDentistId || !selectedDate) {
+    async function updateDentistData() {
+      if (!selectedDentistId) {
+        setBranchesList(allowedBranches || [])
+        if (branchId && !(allowedBranches || []).some(b => b.id === branchId)) {
+          setBranchId("")
+        }
+        setSlots([])
+        setSelectedSlot(null)
+        return
+      }
+
+      // 1. Fetch branches for the selected dentist
+      try {
+        setErrorMsg(null)
+        const dentistBranches = await getBranchesForDentist(selectedDentistId)
+        setBranchesList(dentistBranches)
+        // Check if currently selected branchId is still valid for this dentist
+        if (branchId && !dentistBranches.some(b => b.id === branchId)) {
+          setBranchId("")
+        }
+      } catch (err) {
+        console.error("Error loading branches for dentist:", err)
+        setErrorMsg("Ocurrió un error al cargar las sucursales del odontólogo seleccionado. Por favor, reintenta.")
+        setBranchesList([])
+      }
+
+      // 2. Fetch slots if date is selected
+      if (!selectedDate) {
         setSlots([])
         setSelectedSlot(null)
         return
@@ -84,8 +120,9 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
       }
     }
 
-    fetchSlots()
-  }, [selectedDentistId, selectedDate])
+    updateDentistData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDentistId, selectedDate, allowedBranches])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -103,6 +140,7 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
         status: "programada",
         reason,
         notes,
+        branch_id: branchId || null,
       })
 
       if (res.success) {
@@ -234,6 +272,24 @@ export default function AppointmentForm({ patients, dentists }: AppointmentFormP
                   {dentists.map(d => (
                     <option key={d.id} value={d.id}>
                       {d.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sucursal */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="branch" className="text-foreground font-medium">Sucursal</Label>
+                <select
+                  id="branch"
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  className="w-full bg-white border border-border text-foreground rounded-lg p-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+                >
+                  <option value="">Sin sucursal asignada</option>
+                  {branchesList.map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
                     </option>
                   ))}
                 </select>
