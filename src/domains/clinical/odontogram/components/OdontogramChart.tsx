@@ -160,9 +160,68 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
     setSelectedTooth(toothNumber)
     setErrorMsg(null)
     setSuccessMsg(null)
-    setSelectedFace("Oclusal")
-    setSelectedStatus("sano")
-    setNotes("")
+
+    // Buscar si hay registro de cara general (tooth_face === null)
+    const generalRecord = records.find(
+      r => r.tooth_number === toothNumber && r.tooth_face === null
+    )
+
+    if (generalRecord) {
+      setSelectedFace("Oclusal")
+      setSelectedStatus(generalRecord.status)
+      setNotes(generalRecord.notes || "")
+    } else {
+      // Buscar si hay registro para la cara por defecto (Oclusal)
+      const oclusalRecord = records.find(
+        r => r.tooth_number === toothNumber && r.tooth_face === "Oclusal"
+      )
+      setSelectedFace("Oclusal")
+      if (oclusalRecord) {
+        setSelectedStatus(oclusalRecord.status)
+        setNotes(oclusalRecord.notes || "")
+      } else {
+        setSelectedStatus("sano")
+        setNotes("")
+      }
+    }
+  }
+
+  const handleFaceChange = (newFace: string) => {
+    setSelectedFace(newFace)
+    if (!selectedTooth) return
+
+    // Buscar si hay registro para esa cara específica
+    const faceRecord = records.find(
+      r => r.tooth_number === selectedTooth && r.tooth_face === newFace
+    )
+
+    if (faceRecord) {
+      setSelectedStatus(faceRecord.status)
+      setNotes(faceRecord.notes || "")
+    } else {
+      setSelectedStatus("sano")
+      setNotes("")
+    }
+  }
+  const handleStatusChange = (newStatus: string) => {
+    setSelectedStatus(newStatus)
+    if (!selectedTooth) return
+
+    if (GENERAL_STATUSES.includes(newStatus)) {
+      // Si el nuevo status es general, no tocamos las notas (se preservan o se manejan independientemente)
+      return
+    }
+
+    // Buscar si hay registro para la cara actualmente seleccionada
+    const faceRecord = records.find(
+      r => r.tooth_number === selectedTooth && r.tooth_face === selectedFace
+    )
+
+    if (faceRecord) {
+      setNotes(faceRecord.notes || "")
+    } else {
+      setNotes("")
+    }
   }
 
   const handleConfirm = async () => {
@@ -406,7 +465,7 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
               <label className="text-xs font-semibold text-[#475569]">Diagnóstico / Estado *</label>
               <select
                 value={selectedStatus}
-                onChange={e => setSelectedStatus(e.target.value)}
+                onChange={e => handleStatusChange(e.target.value)}
                 className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all"
               >
                 {STATUS_OPTIONS.map(opt => (
@@ -420,7 +479,7 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
                 <label className="text-xs font-semibold text-[#475569]">Cara Dental *</label>
                 <select
                   value={selectedFace}
-                  onChange={e => setSelectedFace(e.target.value)}
+                  onChange={e => handleFaceChange(e.target.value)}
                   className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all"
                 >
                   {TOOTH_FACES.map(face => (
