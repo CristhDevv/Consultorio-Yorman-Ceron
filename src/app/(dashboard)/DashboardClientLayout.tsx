@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -16,6 +16,8 @@ import {
   X,
   Stethoscope,
 } from "lucide-react"
+import { BranchInfo, ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
+import { setActiveBranchCookie } from "@/domains/branches/actions"
 
 const NAV_ITEMS = [
   { href: "/patients",       label: "Pacientes",       icon: Users,          roles: ["administrador", "odontologo"] },
@@ -31,12 +33,22 @@ const NAV_ITEMS = [
 interface SidebarProps {
   role: string | undefined
   fullName: string | undefined
-  email: string | undefined
   open: boolean
   onClose: () => void
+  allowedBranches: BranchInfo[]
+  activeBranchId: string | null
+  onChangeBranch: (branchId: string) => void
 }
 
-function Sidebar({ role, fullName, email, open, onClose }: SidebarProps) {
+function Sidebar({
+  role,
+  fullName,
+  open,
+  onClose,
+  allowedBranches,
+  activeBranchId,
+  onChangeBranch,
+}: SidebarProps) {
   const pathname = usePathname()
 
   const visibleItems = NAV_ITEMS.filter(item =>
@@ -70,6 +82,30 @@ function Sidebar({ role, fullName, email, open, onClose }: SidebarProps) {
           >
             <X className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Selector de Sucursal */}
+        <div className="px-5 py-3 border-b border-[var(--sidebar-border)]">
+          <label className="text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider block mb-1">
+            Sucursal Activa
+          </label>
+          <select
+            value={activeBranchId || ""}
+            onChange={(e) => onChangeBranch(e.target.value)}
+            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-3 py-1.5 text-xs font-medium text-[#1E293B] focus:outline-none focus:ring-1 focus:ring-[#00C8B4] focus:border-[#00C8B4] transition-all cursor-pointer"
+          >
+            {role === "administrador" && (
+              <option value={ALL_BRANCHES_VALUE}>Todas las sucursales</option>
+            )}
+            {allowedBranches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.name}
+              </option>
+            ))}
+            {allowedBranches.length === 0 && (
+              <option value="">Sin sucursal asignada</option>
+            )}
+          </select>
         </div>
 
         {/* Navigation links */}
@@ -123,23 +159,43 @@ export default function DashboardClientLayout({
   children,
   role,
   fullName,
-  email,
+  allowedBranches,
+  activeBranchId,
+  shouldSync,
+  branchStatus,
 }: {
   children: React.ReactNode
   role: string | undefined
   fullName: string | undefined
   email: string | undefined
+  allowedBranches: BranchInfo[]
+  activeBranchId: string | null
+  shouldSync: boolean
+  branchStatus: "success" | "no_branch"
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Automatic synchronization of the active_branch_id cookie if required
+  useEffect(() => {
+    if (shouldSync && activeBranchId) {
+      setActiveBranchCookie(activeBranchId)
+    }
+  }, [shouldSync, activeBranchId])
+
+  const handleBranchChange = async (branchId: string) => {
+    await setActiveBranchCookie(branchId)
+  }
 
   return (
     <div className="sidebar-layout">
       <Sidebar
         role={role}
         fullName={fullName}
-        email={email}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        allowedBranches={allowedBranches}
+        activeBranchId={activeBranchId}
+        onChangeBranch={handleBranchChange}
       />
       <div className="sidebar-content">
         {/* Mobile top bar */}
@@ -150,17 +206,51 @@ export default function DashboardClientLayout({
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #00C8B4 0%, #00A896 100%)" }}>
-              <Stethoscope className="w-4 h-4 text-white" />
+          <div className="flex-1 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, #00C8B4 0%, #00A896 100%)" }}>
+                <Stethoscope className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-bold text-[#1E293B] hidden sm:inline">Consultorio</span>
             </div>
-            <span className="text-sm font-bold text-[#1E293B]">Consultorio Odontológico</span>
+
+            {/* Mobile Branch Selector */}
+            <select
+              value={activeBranchId || ""}
+              onChange={(e) => handleBranchChange(e.target.value)}
+              className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-2 py-1 text-[11px] font-medium text-[#1E293B] max-w-[150px] focus:outline-none cursor-pointer"
+            >
+              {role === "administrador" && (
+                <option value={ALL_BRANCHES_VALUE}>Todas</option>
+              )}
+              {allowedBranches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+              {allowedBranches.length === 0 && (
+                <option value="">Sin sucursal</option>
+              )}
+            </select>
           </div>
         </div>
-        <main className="p-6 md:p-8">
-          {children}
-        </main>
+
+        {/* Warning panel if no branch is assigned and the role requires it */}
+        {branchStatus === "no_branch" && role !== "paciente" ? (
+          <div className="p-6 md:p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
+            <div className="max-w-md bg-white border border-red-100 rounded-2xl p-6 shadow-sm">
+              <h2 className="text-base font-bold text-red-600 mb-2">Acceso Restringido</h2>
+              <p className="text-sm text-[#64748B]">
+                Su usuario no tiene ninguna sucursal activa asignada en el sistema. Comuníquese con el administrador para autorizar su acceso a una sucursal.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <main className="p-6 md:p-8">
+            {children}
+          </main>
+        )}
       </div>
     </div>
   )

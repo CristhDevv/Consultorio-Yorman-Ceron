@@ -1,6 +1,7 @@
 import { createClient } from "@/shared/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardClientLayout from "./DashboardClientLayout"
+import { resolveActiveBranch, getAllowedBranches } from "@/domains/branches/session"
 
 export default async function DashboardLayout({
   children,
@@ -27,11 +28,19 @@ export default async function DashboardLayout({
     redirect("/portal")
   }
 
+  const role = profile?.role ?? ""
+  const resolvedBranch = await resolveActiveBranch(user.id, role)
+  const allowedBranches = await getAllowedBranches(user.id, role)
+
   return (
     <DashboardClientLayout
       role={profile?.role ?? undefined}
       fullName={profile?.full_name ?? undefined}
       email={user.email}
+      allowedBranches={allowedBranches}
+      activeBranchId={resolvedBranch.activeBranchId}
+      shouldSync={resolvedBranch.shouldSync}
+      branchStatus={resolvedBranch.status}
     >
       {children}
     </DashboardClientLayout>

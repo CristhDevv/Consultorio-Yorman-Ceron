@@ -17,6 +17,7 @@ export type Database = {
       appointments: {
         Row: {
           amount: number | null
+          branch_id: string | null
           created_at: string
           created_by: string
           dentist_id: string
@@ -31,6 +32,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          branch_id?: string | null
           created_at?: string
           created_by: string
           dentist_id: string
@@ -45,6 +47,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          branch_id?: string | null
           created_at?: string
           created_by?: string
           dentist_id?: string
@@ -58,6 +61,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "appointments_dentist_id_profiles_fkey"
             columns: ["dentist_id"]
@@ -74,9 +84,34 @@ export type Database = {
           },
         ]
       }
+      branches: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       communication_logs: {
         Row: {
           appointment_id: string
+          branch_id: string | null
           channel: string
           created_at: string
           created_by: string
@@ -89,6 +124,7 @@ export type Database = {
         }
         Insert: {
           appointment_id: string
+          branch_id?: string | null
           channel: string
           created_at?: string
           created_by: string
@@ -101,6 +137,7 @@ export type Database = {
         }
         Update: {
           appointment_id?: string
+          branch_id?: string | null
           channel?: string
           created_at?: string
           created_by?: string
@@ -120,6 +157,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "communication_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "communication_logs_patient_fkey"
             columns: ["patient_id"]
             isOneToOne: false
@@ -128,8 +172,39 @@ export type Database = {
           },
         ]
       }
+      dentist_branches: {
+        Row: {
+          branch_id: string
+          dentist_id: string
+        }
+        Insert: {
+          branch_id: string
+          dentist_id: string
+        }
+        Update: {
+          branch_id?: string
+          dentist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dentist_branches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dentist_branches_dentist_id_fkey"
+            columns: ["dentist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_movements: {
         Row: {
+          branch_id: string | null
           created_at: string
           created_by: string
           id: string
@@ -139,6 +214,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -148,6 +224,7 @@ export type Database = {
           type: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           created_by?: string
           id?: string
@@ -157,6 +234,13 @@ export type Database = {
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "inventory_movements_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inventory_movements_product_id_fkey"
             columns: ["product_id"]
@@ -168,6 +252,7 @@ export type Database = {
       }
       inventory_products: {
         Row: {
+          branch_id: string | null
           created_at: string
           created_by: string
           current_stock: number
@@ -178,6 +263,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           created_by: string
           current_stock?: number
@@ -188,6 +274,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           created_by?: string
           current_stock?: number
@@ -197,7 +284,15 @@ export type Database = {
           unit?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inventory_products_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       odontogram_records: {
         Row: {
@@ -242,6 +337,7 @@ export type Database = {
       }
       patient_documents: {
         Row: {
+          branch_id: string | null
           bucket_id: string
           created_at: string
           deleted_at: string | null
@@ -255,6 +351,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          branch_id?: string | null
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -268,6 +365,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          branch_id?: string | null
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -282,6 +380,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "patient_documents_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "patient_documents_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
@@ -292,6 +397,7 @@ export type Database = {
       }
       patient_images: {
         Row: {
+          branch_id: string | null
           bucket_id: string
           created_at: string
           deleted_at: string | null
@@ -305,6 +411,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          branch_id?: string | null
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -318,6 +425,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          branch_id?: string | null
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -332,6 +440,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "patient_images_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "patient_images_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
@@ -344,6 +459,7 @@ export type Database = {
         Row: {
           amount: number
           appointment_id: string
+          branch_id: string | null
           created_at: string
           created_by: string
           id: string
@@ -355,6 +471,7 @@ export type Database = {
         Insert: {
           amount: number
           appointment_id: string
+          branch_id?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -366,6 +483,7 @@ export type Database = {
         Update: {
           amount?: number
           appointment_id?: string
+          branch_id?: string | null
           created_at?: string
           created_by?: string
           id?: string
@@ -380,6 +498,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_payments_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
           {
@@ -403,6 +528,7 @@ export type Database = {
           address: string | null
           allergies: string | null
           birth_date: string
+          branch_id: string | null
           created_at: string
           created_by: string
           current_medications: string | null
@@ -419,6 +545,7 @@ export type Database = {
           address?: string | null
           allergies?: string | null
           birth_date: string
+          branch_id?: string | null
           created_at?: string
           created_by: string
           current_medications?: string | null
@@ -435,6 +562,7 @@ export type Database = {
           address?: string | null
           allergies?: string | null
           birth_date?: string
+          branch_id?: string | null
           created_at?: string
           created_by?: string
           current_medications?: string | null
@@ -447,7 +575,15 @@ export type Database = {
           phone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -492,6 +628,13 @@ export type Database = {
         Args: { p_date_from: string; p_date_to: string }
         Returns: Json
       }
+      get_unique_patients_with_logs: {
+        Args: never
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
       insert_communication_log: {
         Args: {
           p_appointment_id: string
@@ -501,13 +644,6 @@ export type Database = {
           p_patient_id: string
         }
         Returns: string
-      }
-      get_unique_patients_with_logs: {
-        Args: never
-        Returns: {
-          id: string
-          full_name: string
-        }[]
       }
       is_admin: { Args: never; Returns: boolean }
       is_odontologo: { Args: never; Returns: boolean }
