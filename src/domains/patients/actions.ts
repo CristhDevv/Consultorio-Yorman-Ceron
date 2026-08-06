@@ -111,6 +111,7 @@ export async function updatePatient(id: string, input: Partial<PatientInput>) {
       diseases: input.diseases || null,
       current_medications: input.current_medications || null,
       medical_observations: input.medical_observations || null,
+      branch_id: input.branch_id || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

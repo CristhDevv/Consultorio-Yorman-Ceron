@@ -162,17 +162,16 @@ export default function PatientForm({
               />
             </div>
 
-            {!initialData && allowedBranches && (
+            {allowedBranches && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="branchId" className="text-foreground font-medium">Sucursal *</Label>
+                <Label htmlFor="branchId" className="text-foreground font-medium">Sucursal</Label>
                 <select
                   id="branchId"
                   value={branchId || ""}
                   onChange={(e) => setBranchId(e.target.value || null)}
                   className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
-                  required
                 >
-                  <option value="" disabled>Seleccione una sucursal</option>
+                  <option value="">Sin sucursal asignada</option>
                   {allowedBranches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}

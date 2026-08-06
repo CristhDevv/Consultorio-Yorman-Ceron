@@ -1,6 +1,8 @@
 import React from "react"
 import { getPatientById, updatePatient, type PatientInput } from "@/domains/patients/actions"
 import PatientForm from "@/domains/patients/components/PatientForm"
+import { createClient } from "@/shared/lib/supabase/server"
+import { getAllowedBranches } from "@/domains/branches/session"
 
 export const metadata = {
   title: "Editar Ficha de Paciente - Consultorio Odontológico",
@@ -14,6 +16,21 @@ interface PageProps {
 export default async function EditPatientPage({ params }: PageProps) {
   const { id } = await params
   const patient = await getPatientById(id)
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let role = ""
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    role = profile?.role || ""
+  }
+
+  const allowedBranches = user ? await getAllowedBranches(user.id, role) : []
 
   const handleUpdate = async (data: Partial<PatientInput>) => {
     "use server"
@@ -33,6 +50,7 @@ export default async function EditPatientPage({ params }: PageProps) {
     diseases: patient.diseases || "",
     current_medications: patient.current_medications || "",
     medical_observations: patient.medical_observations || "",
+    branch_id: patient.branch_id || "",
   }
 
   return (
@@ -44,7 +62,11 @@ export default async function EditPatientPage({ params }: PageProps) {
         </p>
       </div>
 
-      <PatientForm initialData={formInitialData} onSubmit={handleUpdate} />
+      <PatientForm
+        initialData={formInitialData}
+        onSubmit={handleUpdate}
+        allowedBranches={allowedBranches}
+      />
     </div>
   )
 }
