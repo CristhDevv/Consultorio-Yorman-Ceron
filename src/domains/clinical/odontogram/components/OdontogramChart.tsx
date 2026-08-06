@@ -51,6 +51,46 @@ function getToothType(n: number): "incisor" | "canine" | "premolar" | "molar" {
   return "molar"
 }
 
+// ─── Exact anatomical name per FDI tooth number ───────────────
+const TOOTH_NAMES: Record<number, string> = {
+  // Cuadrante I – Superior Derecho
+  11: "Incisivo Central Superior Derecho",
+  12: "Incisivo Lateral Superior Derecho",
+  13: "Canino Superior Derecho",
+  14: "Primer Premolar Superior Derecho",
+  15: "Segundo Premolar Superior Derecho",
+  16: "Primer Molar Superior Derecho",
+  17: "Segundo Molar Superior Derecho",
+  18: "Tercer Molar Superior Derecho (Muela del Juicio)",
+  // Cuadrante II – Superior Izquierdo
+  21: "Incisivo Central Superior Izquierdo",
+  22: "Incisivo Lateral Superior Izquierdo",
+  23: "Canino Superior Izquierdo",
+  24: "Primer Premolar Superior Izquierdo",
+  25: "Segundo Premolar Superior Izquierdo",
+  26: "Primer Molar Superior Izquierdo",
+  27: "Segundo Molar Superior Izquierdo",
+  28: "Tercer Molar Superior Izquierdo (Muela del Juicio)",
+  // Cuadrante III – Inferior Izquierdo
+  31: "Incisivo Central Inferior Izquierdo",
+  32: "Incisivo Lateral Inferior Izquierdo",
+  33: "Canino Inferior Izquierdo",
+  34: "Primer Premolar Inferior Izquierdo",
+  35: "Segundo Premolar Inferior Izquierdo",
+  36: "Primer Molar Inferior Izquierdo",
+  37: "Segundo Molar Inferior Izquierdo",
+  38: "Tercer Molar Inferior Izquierdo (Muela del Juicio)",
+  // Cuadrante IV – Inferior Derecho
+  41: "Incisivo Central Inferior Derecho",
+  42: "Incisivo Lateral Inferior Derecho",
+  43: "Canino Inferior Derecho",
+  44: "Primer Premolar Inferior Derecho",
+  45: "Segundo Premolar Inferior Derecho",
+  46: "Primer Molar Inferior Derecho",
+  47: "Segundo Molar Inferior Derecho",
+  48: "Tercer Molar Inferior Derecho (Muela del Juicio)",
+}
+
 // ─── Anatomical tooth paths (SVG 0 0 44 54 viewBox) ──────────
 function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; isUpper: boolean }) {
   const base = isUpper ? 0 : 0
@@ -268,7 +308,7 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
       {/* Odontogram panel */}
       <div className="flex-1 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-[#1E293B]">Odontograma Clínico (FDI)</h2>
+          <h2 className="text-lg font-bold text-[#1E293B]">Odontograma Clínico</h2>
           <span className="text-xs font-medium text-[#64748B] bg-[#F1F5F9] px-3 py-1 rounded-full">
             Haz clic en un diente para registrar diagnóstico
           </span>
@@ -346,11 +386,12 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
                   style={{ background: "linear-gradient(135deg, #00C8B4, #00A896)" }}>
                   {selectedTooth}
                 </span>
-                <h3 className="text-base font-bold text-[#1E293B]">Pieza Dental</h3>
+                <h3 className="text-base font-bold text-[#1E293B]">
+                  {TOOTH_NAMES[selectedTooth] ?? `Pieza #${selectedTooth}`}
+                </h3>
               </div>
               <p className="text-xs font-medium text-[#64748B]">
-                <span>#{selectedTooth}</span>
-                {" \u2014 Registra un diagnóstico clínico o tratamiento."}
+                Diente #{selectedTooth} — Registra un diagnóstico clínico o tratamiento.
               </p>
             </div>
 
