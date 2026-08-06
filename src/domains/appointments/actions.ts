@@ -18,6 +18,7 @@ export interface AppointmentInput {
   status: "programada" | "confirmada" | "completada" | "cancelada" | "no_asistio"
   reason: string
   notes: string
+  branch_id?: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -116,6 +117,7 @@ export async function createAppointment(input: AppointmentInput) {
       status: input.status,
       reason: input.reason || null,
       notes: input.notes || null,
+      branch_id: input.branch_id || null,
       created_by: user.id,
     })
     .select("id")
@@ -263,6 +265,7 @@ export async function updateAppointment(id: string, input: Partial<AppointmentIn
       ...(input.status !== undefined && { status: input.status }),
       ...(input.reason !== undefined && { reason: input.reason || null }),
       ...(input.notes !== undefined && { notes: input.notes || null }),
+      ...(input.branch_id !== undefined && { branch_id: input.branch_id || null }),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -427,4 +430,41 @@ export async function getAvailableSlotsForDentistAndDate(
 ) {
   const appointments = await getAppointmentsByDentistAndDate(dentistId, dateStr, excludeAppointmentId)
   return getAvailableSlots(dentistId, dateStr, appointments)
+}
+
+// ---------------------------------------------------------------------------
+// 7. Obtener sucursales activas donde atiende un odontólogo específico
+//    Consulta dentist_branches join branches filtrando por is_active = true.
+//    Consumible como Server Action desde Client Components (mismo patrón que
+//    getAvailableSlotsForDentistAndDate).
+// ---------------------------------------------------------------------------
+export async function getBranchesForDentist(dentistId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("dentist_branches")
+    .select(`
+      branch_id,
+      branches (
+        id,
+        name,
+        is_active
+      )
+    `)
+    .eq("dentist_id", dentistId)
+
+  if (error) {
+    throw new Error(`Error al obtener sucursales del odontólogo: ${error.message}`)
+  }
+
+  // Aplanar y filtrar: excluir filas huérfanas (branch null) y sucursales inactivas.
+  // El cast a Branch | null es necesario porque Supabase tipifica la relación
+  // embebida como objeto | null; el null check explícito aquí garantiza que
+  // nunca accedemos a propiedades de un branch nulo.
+  interface Branch { id: string; name: string; is_active: boolean }
+  return (data || []).flatMap(row => {
+    const branch = row.branches as Branch | null
+    if (branch === null || !branch.is_active) return []
+    return [{ id: branch.id, name: branch.name }]
+  })
 }

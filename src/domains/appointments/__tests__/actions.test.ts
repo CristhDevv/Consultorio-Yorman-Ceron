@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { createAppointment, getAppointmentById, updateAppointment, getAvailableSlotsForDentistAndDate, type AppointmentInput } from '../actions';
+import { createAppointment, getAppointmentById, updateAppointment, getAvailableSlotsForDentistAndDate, getBranchesForDentist, type AppointmentInput } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { sendConfirmationEmail } from '../../communications/email';
@@ -102,6 +102,7 @@ describe('Appointments Actions', () => {
         status: 'programada',
         reason: 'Consulta general',
         notes: 'Primer control dental',
+        branch_id: null,
         created_by: 'user-789',
       });
       expect(revalidatePath).toHaveBeenCalledWith('/appointments');
@@ -593,6 +594,66 @@ describe('Appointments Actions', () => {
       const hasOverlapSlot = slots.some(slot => slot.starts_at === '2026-07-06T14:00:00.000Z');
       expect(hasOverlapSlot).toBe(false);
       expect(slots.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getBranchesForDentist', () => {
+    it('1. devuelve solo las sucursales activas del odontólogo con la forma correcta', async () => {
+      // Arrange
+      const mockEq = vi.fn().mockResolvedValue({
+        data: [
+          { branch_id: 'b-1', branches: { id: 'b-1', name: 'Sucursal Norte', is_active: true } },
+          { branch_id: 'b-2', branches: { id: 'b-2', name: 'Sucursal Sur', is_active: true } },
+        ],
+        error: null,
+      });
+      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+      mockSupabase.from.mockReturnValue({ select: mockSelect });
+
+      // Act
+      const result = await getBranchesForDentist('dentist-456');
+
+      // Assert
+      expect(mockSupabase.from).toHaveBeenCalledWith('dentist_branches');
+      expect(mockEq).toHaveBeenCalledWith('dentist_id', 'dentist-456');
+      expect(result).toEqual([
+        { id: 'b-1', name: 'Sucursal Norte' },
+        { id: 'b-2', name: 'Sucursal Sur' },
+      ]);
+    });
+
+    it('2. excluye del resultado las sucursales inactivas aunque el odontólogo esté asignado a ellas', async () => {
+      // Arrange
+      const mockEq = vi.fn().mockResolvedValue({
+        data: [
+          { branch_id: 'b-1', branches: { id: 'b-1', name: 'Sucursal Activa', is_active: true } },
+          { branch_id: 'b-2', branches: { id: 'b-2', name: 'Sucursal Inactiva', is_active: false } },
+          { branch_id: 'b-3', branches: null }, // fila huérfana: branch borrado sin eliminar vínculo
+        ],
+        error: null,
+      });
+      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+      mockSupabase.from.mockReturnValue({ select: mockSelect });
+
+      // Act
+      const result = await getBranchesForDentist('dentist-456');
+
+      // Assert: solo Sucursal Activa llega al resultado
+      expect(result).toEqual([{ id: 'b-1', name: 'Sucursal Activa' }]);
+      expect(result).not.toContainEqual(expect.objectContaining({ name: 'Sucursal Inactiva' }));
+    });
+
+    it('3. devuelve un arreglo vacío sin error cuando el odontólogo no tiene filas en dentist_branches', async () => {
+      // Arrange
+      const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+      mockSupabase.from.mockReturnValue({ select: mockSelect });
+
+      // Act
+      const result = await getBranchesForDentist('dentist-sin-sucursal');
+
+      // Assert
+      expect(result).toEqual([]);
     });
   });
 });
