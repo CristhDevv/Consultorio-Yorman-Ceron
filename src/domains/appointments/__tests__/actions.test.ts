@@ -211,7 +211,6 @@ describe('Appointments Actions', () => {
         p_patient_id: 'patient-123',
         p_channel: 'email',
         p_event_type: 'confirmation',
-        p_created_by: 'user-789',
       });
       expect(sendConfirmationEmail).toHaveBeenCalledWith({
         to: 'juan@example.com',
@@ -458,7 +457,6 @@ describe('Appointments Actions', () => {
         p_patient_id: 'patient-123',
         p_channel: 'email',
         p_event_type: 'confirmation',
-        p_created_by: 'user-789',
       });
       expect(sendConfirmationEmail).toHaveBeenCalledWith({
         to: 'juan@example.com',

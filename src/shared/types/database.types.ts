@@ -639,7 +639,6 @@ export type Database = {
         Args: {
           p_appointment_id: string
           p_channel: string
-          p_created_by: string
           p_event_type: string
           p_patient_id: string
         }

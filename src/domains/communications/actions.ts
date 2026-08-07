@@ -53,7 +53,6 @@ export async function createCommunicationLog(
     p_patient_id: input.patientId,
     p_channel: input.channel,
     p_event_type: input.eventType,
-    p_created_by: user.id,
   })
 
   if (insertError) {

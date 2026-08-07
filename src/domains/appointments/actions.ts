@@ -176,56 +176,67 @@ export async function createAppointment(input: AppointmentInput) {
         formattedDate = apptWithDetails.starts_at
       }
 
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      const logCreatedBy = currentUser?.id || "00000000-0000-0000-0000-000000000000"
-
       // Crear log de comunicación con status pending
-      const { data: logId } = await supabase.rpc("insert_communication_log", {
+      const { data: logId, error: insertError } = await supabase.rpc("insert_communication_log", {
         p_appointment_id: id,
         p_patient_id: apptWithDetails.patient_id,
         p_channel: "email",
         p_event_type: "confirmation",
-        p_created_by: logCreatedBy,
       })
 
-      if (logId) {
-        // Enviar correo envolviendo en try/catch independiente
-        try {
-          const patientsData = apptWithDetails.patients as { full_name: string; email: string | null } | null
-          const profilesData = apptWithDetails.profiles as { full_name: string } | null
+      if (insertError) {
+        console.error(`Error al insertar log de comunicación para cita ${id}:`, insertError)
+      }
 
-          const recipientEmail = patientsData?.email || ""
-          const patientName = patientsData?.full_name || "Paciente"
-          const dentistName = profilesData?.full_name || undefined
+      // Enviar correo envolviendo en try/catch independiente (se ejecuta siempre)
+      try {
+        const patientsData = apptWithDetails.patients as { full_name: string; email: string | null } | null
+        const profilesData = apptWithDetails.profiles as { full_name: string } | null
 
-          const emailResult = await sendConfirmationEmail({
-            to: recipientEmail,
-            patientName,
-            appointmentDate: formattedDate,
-            appointmentTime: formattedTime,
-            dentistName,
-          })
+        const recipientEmail = patientsData?.email || ""
+        const patientName = patientsData?.full_name || "Paciente"
+        const dentistName = profilesData?.full_name || undefined
 
-          // Actualizar estado de envío según resultado
+        const emailResult = await sendConfirmationEmail({
+          to: recipientEmail,
+          patientName,
+          appointmentDate: formattedDate,
+          appointmentTime: formattedTime,
+          dentistName,
+        })
+
+        // Solo actualizamos el estado si logId fue creado con éxito
+        if (logId) {
           if (emailResult.success) {
-            await supabase.rpc("update_communication_log_status", {
+            const { error: updateError } = await supabase.rpc("update_communication_log_status", {
               p_log_id: logId,
               p_status: "sent",
             })
+            if (updateError) {
+              console.error(`Error al actualizar estado del log de comunicación a 'sent' para cita ${id}:`, updateError)
+            }
           } else {
-            await supabase.rpc("update_communication_log_status", {
+            const { error: updateError } = await supabase.rpc("update_communication_log_status", {
               p_log_id: logId,
               p_status: "failed",
               p_error_message: emailResult.error,
             })
+            if (updateError) {
+              console.error(`Error al actualizar estado del log de comunicación a 'failed' para cita ${id}:`, updateError)
+            }
           }
-        } catch (emailError: unknown) {
-          const errMessage = emailError instanceof Error ? emailError.message : "Error inesperado al enviar email"
-          await supabase.rpc("update_communication_log_status", {
+        }
+      } catch (emailError: unknown) {
+        const errMessage = emailError instanceof Error ? emailError.message : "Error inesperado al enviar email"
+        if (logId) {
+          const { error: updateError } = await supabase.rpc("update_communication_log_status", {
             p_log_id: logId,
             p_status: "failed",
             p_error_message: errMessage,
           })
+          if (updateError) {
+            console.error(`Error al actualizar estado del log de comunicación a 'failed' (en catch) para cita ${id}:`, updateError)
+          }
         }
       }
     }
@@ -321,56 +332,67 @@ export async function updateAppointment(id: string, input: Partial<AppointmentIn
         formattedDate = apptWithDetails.starts_at
       }
 
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      const logCreatedBy = currentUser?.id || "00000000-0000-0000-0000-000000000000"
-
       // 3. Crear log de comunicación con status pending
-      const { data: logId } = await supabase.rpc("insert_communication_log", {
+      const { data: logId, error: insertError } = await supabase.rpc("insert_communication_log", {
         p_appointment_id: id,
         p_patient_id: apptWithDetails.patient_id,
         p_channel: "email",
         p_event_type: "confirmation",
-        p_created_by: logCreatedBy,
       })
 
-      if (logId) {
-        // 4. Enviar correo envolviendo en try/catch independiente
-        try {
-          const patientsData = apptWithDetails.patients as { full_name: string; email: string | null } | null
-          const profilesData = apptWithDetails.profiles as { full_name: string } | null
+      if (insertError) {
+        console.error(`Error al insertar log de comunicación para cita ${id}:`, insertError)
+      }
 
-          const recipientEmail = patientsData?.email || ""
-          const patientName = patientsData?.full_name || "Paciente"
-          const dentistName = profilesData?.full_name || undefined
+      // 4. Enviar correo envolviendo en try/catch independiente (se ejecuta siempre)
+      try {
+        const patientsData = apptWithDetails.patients as { full_name: string; email: string | null } | null
+        const profilesData = apptWithDetails.profiles as { full_name: string } | null
 
-          const emailResult = await sendConfirmationEmail({
-            to: recipientEmail,
-            patientName,
-            appointmentDate: formattedDate,
-            appointmentTime: formattedTime,
-            dentistName,
-          })
+        const recipientEmail = patientsData?.email || ""
+        const patientName = patientsData?.full_name || "Paciente"
+        const dentistName = profilesData?.full_name || undefined
 
-          // 5. Actualizar estado de envío según resultado
+        const emailResult = await sendConfirmationEmail({
+          to: recipientEmail,
+          patientName,
+          appointmentDate: formattedDate,
+          appointmentTime: formattedTime,
+          dentistName,
+        })
+
+        // 5. Actualizar estado de envío según resultado si logId fue creado con éxito
+        if (logId) {
           if (emailResult.success) {
-            await supabase.rpc("update_communication_log_status", {
+            const { error: updateError } = await supabase.rpc("update_communication_log_status", {
               p_log_id: logId,
               p_status: "sent",
             })
+            if (updateError) {
+              console.error(`Error al actualizar estado del log de comunicación a 'sent' para cita ${id}:`, updateError)
+            }
           } else {
-            await supabase.rpc("update_communication_log_status", {
+            const { error: updateError } = await supabase.rpc("update_communication_log_status", {
               p_log_id: logId,
               p_status: "failed",
               p_error_message: emailResult.error,
             })
+            if (updateError) {
+              console.error(`Error al actualizar estado del log de comunicación a 'failed' para cita ${id}:`, updateError)
+            }
           }
-        } catch (emailError: unknown) {
-          const errMessage = emailError instanceof Error ? emailError.message : "Error inesperado al enviar email"
-          await supabase.rpc("update_communication_log_status", {
+        }
+      } catch (emailError: unknown) {
+        const errMessage = emailError instanceof Error ? emailError.message : "Error inesperado al enviar email"
+        if (logId) {
+          const { error: updateError } = await supabase.rpc("update_communication_log_status", {
             p_log_id: logId,
             p_status: "failed",
             p_error_message: errMessage,
           })
+          if (updateError) {
+            console.error(`Error al actualizar estado del log de comunicación a 'failed' (en catch) para cita ${id}:`, updateError)
+          }
         }
       }
     }
