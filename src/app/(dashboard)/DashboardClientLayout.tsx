@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Stethoscope,
+  BookOpen,
 } from "lucide-react"
 import { BranchInfo, ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 import { setActiveBranchCookie } from "@/domains/branches/actions"
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: "/reports",        label: "Reportes",         icon: BarChart3,      roles: ["administrador"] },
   { href: "/communications", label: "Comunicaciones",   icon: MessageSquare,  roles: ["administrador"] },
   { href: "/trash",          label: "Papelera",         icon: Trash2,         roles: ["administrador"] },
+  { href: "/tutorials",      label: "Tutoriales",       icon: BookOpen,       roles: ["administrador", "odontologo"] },
 ]
 
 interface SidebarProps {
