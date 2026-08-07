@@ -15,7 +15,7 @@ export type ActionResult<T = null> =
 /**
  * Creates a new communication log.
  * Only administrative staff (odontologo or administrador) can initiate communications.
- * Inserts directly to the communication_logs table.
+ * Inserts the record using the controlled SECURITY DEFINER function insert_communication_log.
  */
 export async function createCommunicationLog(
   input: CommunicationLogInput
