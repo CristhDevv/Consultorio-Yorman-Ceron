@@ -1,5 +1,12 @@
 import { vi, describe, it, expect, beforeEach } from "vitest"
-import { getStaffMembers, createStaffMember, demoteStaffMember, changeStaffRole } from "../actions"
+import {
+  getStaffMembers,
+  createStaffMember,
+  demoteStaffMember,
+  changeStaffRole,
+  getActiveBranches,
+  updateDentistBranches
+} from "../actions"
 import { createClient } from "@/shared/lib/supabase/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
@@ -288,6 +295,66 @@ describe("Staff Actions", () => {
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ role: "administrador" })
       )
+      expect(revalidatePath).toHaveBeenCalledWith("/staff")
+    })
+  })
+
+  describe("getActiveBranches", () => {
+    it("debe retornar listado de sucursales activas", async () => {
+      const mockBranches = [{ id: "b-1", name: "Timbio" }]
+      const mockOrder = vi.fn().mockResolvedValue({ data: mockBranches, error: null })
+      const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
+
+      mockSupabase.from.mockImplementation((tableName) => {
+        if (tableName === "branches") {
+          return { select: mockSelect }
+        }
+        return {}
+      })
+
+      const result = await getActiveBranches()
+      expect(result).toEqual(mockBranches)
+    })
+  })
+
+  describe("updateDentistBranches", () => {
+    it("debe actualizar las sucursales asociadas exitosamente", async () => {
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: { role: "administrador" },
+        error: null,
+      })
+
+      const mockDelete = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null })
+      })
+
+      const mockInsert = vi.fn().mockResolvedValue({ error: null })
+
+      mockSupabase.from.mockImplementation((tableName) => {
+        if (tableName === "profiles") {
+          return {
+            select: () => ({
+              eq: () => ({ single: mockSingle })
+            })
+          }
+        }
+        if (tableName === "dentist_branches") {
+          return {
+            delete: mockDelete,
+            insert: mockInsert
+          }
+        }
+        return {}
+      })
+
+      const result = await updateDentistBranches("dentist-id", ["branch-1", "branch-2"])
+      expect(result.success).toBe(true)
+      expect(mockDelete).toHaveBeenCalled()
+      expect(mockInsert).toHaveBeenCalledWith([
+        { dentist_id: "dentist-id", branch_id: "branch-1" },
+        { dentist_id: "dentist-id", branch_id: "branch-2" }
+      ])
       expect(revalidatePath).toHaveBeenCalledWith("/staff")
     })
   })

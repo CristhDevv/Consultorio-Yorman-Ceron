@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import { useRouter } from "next/navigation"
 import { AlertCircle, CheckCircle2, Info } from "lucide-react"
 
 export interface OdontogramRecord {
@@ -28,7 +29,6 @@ const QUADRANT_2 = [21, 22, 23, 24, 25, 26, 27, 28]
 const QUADRANT_3 = [31, 32, 33, 34, 35, 36, 37, 38]
 const QUADRANT_4 = [48, 47, 46, 45, 44, 43, 42, 41]
 
-const TOOTH_FACES = ["Oclusal", "Mesial", "Distal", "Vestibular", "Palatina", "Lingual", "General"]
 const STATUS_OPTIONS = [
   { value: "sano",               label: "Sano",               color: "bg-emerald-50 text-emerald-700 border-emerald-300",  fill: "#10B981" },
   { value: "caries",             label: "Caries",             color: "bg-red-50 text-red-700 border-red-300",              fill: "#EF4444" },
@@ -92,7 +92,8 @@ const TOOTH_NAMES: Record<number, string> = {
 }
 
 // ─── Anatomical tooth paths (SVG 0 0 44 54 viewBox) ──────────
-function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; isUpper: boolean }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function ToothShape({ type, isUpper, fill = "#F8FAFC" }: { type: ReturnType<typeof getToothType>; isUpper: boolean; fill?: string }) {
 
   if (type === "incisor") {
     // Rectangular with slightly rounded crown
@@ -101,7 +102,7 @@ function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; 
         {/* Root */}
         <path d="M17 30 Q16 48 22 54 Q28 48 27 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
         {/* Crown */}
-        <rect x="10" y="8" width="24" height="22" rx="4" fill="#F8FAFC" stroke="#94A3B8" strokeWidth="1" />
+        <rect x="10" y="8" width="24" height="22" rx="4" fill={fill} stroke="#94A3B8" strokeWidth="1" />
       </g>
     )
   }
@@ -110,7 +111,7 @@ function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; 
     return (
       <g>
         <path d="M17 30 Q15 50 22 54 Q29 50 27 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
-        <path d="M10 28 L22 6 L34 28 Q31 32 22 32 Q13 32 10 28 Z" fill="#F8FAFC" stroke="#94A3B8" strokeWidth="1" />
+        <path d="M10 28 L22 6 L34 28 Q31 32 22 32 Q13 32 10 28 Z" fill={fill} stroke="#94A3B8" strokeWidth="1" />
       </g>
     )
   }
@@ -119,7 +120,7 @@ function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; 
     return (
       <g>
         <path d="M14 30 Q13 46 18 53 Q19 54 20 53 Q21 48 22 44 Q23 48 24 53 Q25 54 26 53 Q30 46 30 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
-        <rect x="9" y="9" width="26" height="21" rx="5" fill="#F8FAFC" stroke="#94A3B8" strokeWidth="1" />
+        <rect x="9" y="9" width="26" height="21" rx="5" fill={fill} stroke="#94A3B8" strokeWidth="1" />
         {/* Bicuspid line */}
         <line x1="22" y1="9" x2="22" y2="30" stroke="#CBD5E1" strokeWidth="0.6" />
       </g>
@@ -129,7 +130,7 @@ function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; 
   return (
     <g>
       <path d="M9 30 Q8 46 14 53 Q15 54 16 53 Q17 47 22 44 Q27 47 28 53 Q29 54 30 53 Q36 46 35 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
-      <rect x="6" y="8" width="32" height="22" rx="5" fill="#F8FAFC" stroke="#94A3B8" strokeWidth="1" />
+      <rect x="6" y="8" width="32" height="22" rx="5" fill={fill} stroke="#94A3B8" strokeWidth="1" />
       {/* Crown grooves */}
       <line x1="22" y1="8" x2="22" y2="30" stroke="#CBD5E1" strokeWidth="0.6" />
       <line x1="6" y1="19" x2="38" y2="19" stroke="#CBD5E1" strokeWidth="0.5" />
@@ -138,8 +139,9 @@ function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; 
 }
 
 export default function OdontogramChart({ records = [], onSelectionSubmit }: OdontogramChartProps) {
+  const router = useRouter()
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
-  const [selectedFace, setSelectedFace] = useState<string>("Oclusal")
+  const [selectedFace, setSelectedFace] = useState<string>("General")
   const [selectedStatus, setSelectedStatus] = useState<string>("sano")
   const [notes, setNotes] = useState<string>("")
   const [submitting, setSubmitting] = useState(false)
@@ -166,19 +168,20 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
     )
 
     if (generalRecord) {
-      setSelectedFace("Oclusal")
+      setSelectedFace("General")
       setSelectedStatus(generalRecord.status)
       setNotes(generalRecord.notes || "")
     } else {
-      // Buscar si hay registro para la cara por defecto (Oclusal)
-      const oclusalRecord = records.find(
-        r => r.tooth_number === toothNumber && r.tooth_face === "Oclusal"
+      // Buscar si hay registro de cara específica
+      const firstFaceRecord = records.find(
+        r => r.tooth_number === toothNumber && r.tooth_face !== null
       )
-      setSelectedFace("Oclusal")
-      if (oclusalRecord) {
-        setSelectedStatus(oclusalRecord.status)
-        setNotes(oclusalRecord.notes || "")
+      if (firstFaceRecord) {
+        setSelectedFace(firstFaceRecord.tooth_face!)
+        setSelectedStatus(firstFaceRecord.status)
+        setNotes(firstFaceRecord.notes || "")
       } else {
+        setSelectedFace("General")
         setSelectedStatus("sano")
         setNotes("")
       }
@@ -189,38 +192,23 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
     setSelectedFace(newFace)
     if (!selectedTooth) return
 
-    // Buscar si hay registro para esa cara específica
-    const faceRecord = records.find(
-      r => r.tooth_number === selectedTooth && r.tooth_face === newFace
-    )
-
-    if (faceRecord) {
-      setSelectedStatus(faceRecord.status)
-      setNotes(faceRecord.notes || "")
+    if (newFace === "General") {
+      const generalRecord = records.find(
+        r => r.tooth_number === selectedTooth && r.tooth_face === null
+      )
+      setSelectedStatus(generalRecord ? generalRecord.status : "sano")
+      setNotes(generalRecord ? (generalRecord.notes || "") : "")
     } else {
-      setSelectedStatus("sano")
-      setNotes("")
+      const faceRecord = records.find(
+        r => r.tooth_number === selectedTooth && r.tooth_face === newFace
+      )
+      setSelectedStatus(faceRecord ? faceRecord.status : "sano")
+      setNotes(faceRecord ? (faceRecord.notes || "") : "")
     }
   }
+
   const handleStatusChange = (newStatus: string) => {
     setSelectedStatus(newStatus)
-    if (!selectedTooth) return
-
-    if (GENERAL_STATUSES.includes(newStatus)) {
-      // Si el nuevo status es general, no tocamos las notas (se preservan o se manejan independientemente)
-      return
-    }
-
-    // Buscar si hay registro para la cara actualmente seleccionada
-    const faceRecord = records.find(
-      r => r.tooth_number === selectedTooth && r.tooth_face === selectedFace
-    )
-
-    if (faceRecord) {
-      setNotes(faceRecord.notes || "")
-    } else {
-      setNotes("")
-    }
   }
 
   const handleConfirm = async () => {
@@ -229,10 +217,10 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
     setErrorMsg(null)
     setSuccessMsg(null)
 
-    const isGeneralStatus = ["sano","ausente","extraccion_indicada","endodoncia","corona","implante"].includes(selectedStatus)
+    const isGeneralFace = selectedFace === "General"
     const payload = {
       tooth_number: selectedTooth,
-      tooth_face: isGeneralStatus ? null : selectedFace,
+      tooth_face: isGeneralFace ? null : selectedFace,
       status: selectedStatus,
       notes: notes.trim() || undefined,
     }
@@ -243,6 +231,7 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
         setSuccessMsg("¡Registro guardado correctamente!")
         setSelectedTooth(null)
         setNotes("")
+        router.refresh()
       } else {
         setErrorMsg(res.error || "Ocurrió un error al persistir el registro.")
       }
@@ -252,8 +241,6 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
       setSubmitting(false)
     }
   }
-
-  const GENERAL_STATUSES = ["sano","ausente","extraccion_indicada","endodoncia","corona","implante"]
 
   const renderTooth = (toothNumber: number) => {
     const isSelected = selectedTooth === toothNumber
@@ -331,7 +318,7 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
           />
 
           {/* Anatomic tooth shape */}
-          <ToothShape type={type} isUpper={isUpper} />
+          <ToothShape type={type} isUpper={isUpper} fill={toothFill} />
 
           {/* Crown ring for corona/implante */}
           {generalStatuses.some(g => g.status === "corona") && (
@@ -460,38 +447,50 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
               </div>
             )}
 
+            {/* Cara Dental */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-[#475569]">Cara Dental *</label>
+              <select
+                value={selectedFace}
+                onChange={e => handleFaceChange(e.target.value)}
+                className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all cursor-pointer"
+              >
+                <option value="General">Toda la pieza (General)</option>
+                <option value="Oclusal">Oclusal (Centro)</option>
+                <option value="Mesial">Mesial</option>
+                <option value="Distal">Distal</option>
+                <option value="Vestibular">Vestibular</option>
+                {selectedTooth && selectedTooth < 30 ? (
+                  <option value="Palatina">Palatina</option>
+                ) : (
+                  <option value="Lingual">Lingual</option>
+                )}
+              </select>
+            </div>
+
+            {/* Diagnóstico / Estado */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-[#475569]">Diagnóstico / Estado *</label>
               <select
                 value={selectedStatus}
                 onChange={e => handleStatusChange(e.target.value)}
-                className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all"
+                className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all cursor-pointer"
               >
-                {STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {selectedFace === "General" ? (
+                  // Estados Generales
+                  STATUS_OPTIONS.filter(opt => ["sano", "ausente", "extraccion_indicada", "endodoncia", "corona", "implante"].includes(opt.value)).map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))
+                ) : (
+                  // Estados por Cara
+                  STATUS_OPTIONS.filter(opt => ["sano", "caries", "obturado", "sellante", "fracturado"].includes(opt.value)).map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.value === "sano" ? "Sano / Limpiar diagnóstico" : opt.label}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
-
-            {!GENERAL_STATUSES.includes(selectedStatus) ? (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-[#475569]">Cara Dental *</label>
-                <select
-                  value={selectedFace}
-                  onChange={e => handleFaceChange(e.target.value)}
-                  className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all"
-                >
-                  {TOOTH_FACES.map(face => (
-                    <option key={face} value={face}>{face}</option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 p-3 bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl text-[#64748B] text-xs">
-                <Info className="w-4 h-4 text-[#00C8B4] shrink-0" />
-                <span>El diagnóstico seleccionado aplica a toda la pieza completa (cara general).</span>
-              </div>
-            )}
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-[#475569]">Notas clínicas</label>
@@ -536,6 +535,54 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
           </div>
         )}
       </div>
+
+      {/* Historial Clínico de Cambios */}
+      {records.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-[#E2E8F0] w-full">
+          <h4 className="text-sm font-bold text-[#1E293B] mb-3">Historial Clínico de Odontograma</h4>
+          <div className="overflow-x-auto border border-[#E2E8F0] rounded-xl shadow-2xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Fecha</th>
+                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Diente</th>
+                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Cara</th>
+                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Diagnóstico/Estado</th>
+                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Notas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E2E8F0]">
+                {records.map((r) => {
+                  const dateStr = new Date(r.created_at).toLocaleDateString("es-CO", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                  const toothName = TOOTH_NAMES[r.tooth_number] || `Diente #${r.tooth_number}`
+                  const statusOpt = STATUS_OPTIONS.find((s) => s.value === r.status)
+                  return (
+                    <tr key={r.id} className="hover:bg-[#F8FAFC]/50 transition-colors">
+                      <td className="px-4 py-2.5 font-medium text-[#64748B]">{dateStr}</td>
+                      <td className="px-4 py-2.5 font-bold text-[#1E293B]">{toothName}</td>
+                      <td className="px-4 py-2.5 font-medium text-[#475569]">
+                        {r.tooth_face === null ? "Toda la pieza" : r.tooth_face}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusOpt?.color || ""}`}>
+                          {statusOpt?.label || r.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-[#64748B] italic max-w-[200px] truncate" title={r.notes || ""}>
+                        {r.notes || "—"}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

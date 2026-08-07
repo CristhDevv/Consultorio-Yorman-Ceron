@@ -183,6 +183,32 @@ describe('Odontogram Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/patients/patient-abc');
     });
 
+    it('should delete the record and return success without inserting when status is "sano" for a face-level status', async () => {
+      const inputSanoFace: OdontogramRecordInput = {
+        patient_id: 'patient-abc',
+        tooth_number: 36,
+        tooth_face: 'Oclusal',
+        status: 'sano',
+        notes: null,
+      };
+
+      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
+
+      const mockEqD3   = vi.fn().mockResolvedValue({ error: null });
+      const mockEqD2   = vi.fn().mockReturnValue({ eq: mockEqD3 });
+      const mockEqD1   = vi.fn().mockReturnValue({ eq: mockEqD2 });
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockEqD1 });
+      mockSupabase.from.mockReturnValue({ delete: mockDelete });
+
+      const result = await createOdontogramRecord(inputSanoFace);
+
+      expect(result).toEqual({ success: true });
+      expect(mockSupabase.from).toHaveBeenCalledTimes(1);
+      expect(mockSupabase.from).toHaveBeenCalledWith('odontogram_records');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(revalidatePath).toHaveBeenCalledWith('/patients/patient-abc');
+    });
+
     it('should return { success: false, error } on Supabase insert error without throwing', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
       const { mockInsert } = setupFromMock({

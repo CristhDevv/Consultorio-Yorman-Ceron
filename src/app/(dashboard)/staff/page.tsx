@@ -1,7 +1,7 @@
 import React from "react"
 import { redirect } from "next/navigation"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
-import { getStaffMembers } from "@/domains/staff/actions"
+import { getStaffMembers, getActiveBranches } from "@/domains/staff/actions"
 import StaffDashboard from "@/domains/staff/components/StaffDashboard"
 
 export const metadata = {
@@ -20,8 +20,9 @@ export default async function StaffPage() {
     redirect("/")
   }
 
-  // 3. Obtener listado de miembros del personal
+  // 3. Obtener listado de miembros del personal y sucursales
   const staff = await getStaffMembers()
+  const branches = await getActiveBranches()
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto">
@@ -32,7 +33,7 @@ export default async function StaffPage() {
         </p>
       </div>
 
-      <StaffDashboard initialStaff={staff} />
+      <StaffDashboard initialStaff={staff} branches={branches} />
     </div>
   )
 }

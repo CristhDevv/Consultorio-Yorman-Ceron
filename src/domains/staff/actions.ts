@@ -10,6 +10,12 @@ export interface StaffProfile {
   role: string
   phone: string | null
   created_at: string
+  dentist_branches?: {
+    branch_id: string
+    branches: {
+      name: string
+    } | null
+  }[]
 }
 
 export type ActionResult<T = null> =
@@ -39,7 +45,17 @@ export async function getStaffMembers(): Promise<StaffProfile[]> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, phone, created_at")
+    .select(`
+      id,
+      full_name,
+      role,
+      phone,
+      created_at,
+      dentist_branches(
+        branch_id,
+        branches(name)
+      )
+    `)
     .in("role", ["administrador", "odontologo"])
     .order("full_name")
 
@@ -218,6 +234,75 @@ export async function changeStaffRole(
 
   if (error) {
     return { success: false, error: error.message }
+  }
+
+  revalidatePath("/staff")
+  return { success: true, data: null }
+}
+
+// 5. Obtener listado de sucursales activas en el sistema
+export async function getActiveBranches(): Promise<Array<{ id: string; name: string }>> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("branches")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("name")
+
+  if (error) {
+    throw new Error(`Error al obtener sucursales: ${error.message}`)
+  }
+  return data || []
+}
+
+// 6. Actualizar las sucursales asignadas a un odontólogo
+export async function updateDentistBranches(
+  dentistId: string,
+  branchIds: string[]
+): Promise<ActionResult> {
+  const supabase = await createClient()
+
+  // Validar sesión
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: "No hay sesión activa." }
+  }
+
+  // Validar rol administrador
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profile?.role !== "administrador") {
+    return { success: false, error: "Acceso denegado. Solo administradores pueden gestionar sucursales de odontólogos." }
+  }
+
+  // Limpiar sucursales previas
+  const { error: deleteError } = await supabase
+    .from("dentist_branches")
+    .delete()
+    .eq("dentist_id", dentistId)
+
+  if (deleteError) {
+    return { success: false, error: `Error al limpiar sucursales previas: ${deleteError.message}` }
+  }
+
+  // Insertar nuevas asociaciones
+  if (branchIds.length > 0) {
+    const insertRows = branchIds.map((branchId) => ({
+      dentist_id: dentistId,
+      branch_id: branchId,
+    }))
+
+    const { error: insertError } = await supabase
+      .from("dentist_branches")
+      .insert(insertRows)
+
+    if (insertError) {
+      return { success: false, error: `Error al asociar sucursales: ${insertError.message}` }
+    }
   }
 
   revalidatePath("/staff")

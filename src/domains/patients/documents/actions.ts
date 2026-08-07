@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache"
 import { randomUUID } from "crypto"
 import { createClient } from "@/shared/lib/supabase/server"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
-import { resolveActiveBranch } from "@/domains/branches/session"
 
 // ─── Blocklist de extensiones y mimetypes peligrosos ───────────────────────
 const BLOCKED_EXTENSIONS = new Set([
@@ -54,15 +53,10 @@ export async function uploadPatientDocument(
   const supabase = await createClient()
 
   // — Validar sesión y obtener sucursal activa ─────────────────────────────
-  const { user, role } = await getCurrentUserWithRole()
+  const { user } = await getCurrentUserWithRole()
 
   if (!user) {
     return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
-  }
-
-  const { activeBranchId } = await resolveActiveBranch(user.id, role ?? "")
-  if (!activeBranchId) {
-    return { success: false, error: "No tienes una sucursal activa asignada. Contacta al administrador." }
   }
 
   // — Extraer campos del FormData ───────────────────────────────────────────
@@ -76,6 +70,22 @@ export async function uploadPatientDocument(
       error: "Faltan campos requeridos: patient_id, document_type y file.",
     }
   }
+
+  // — Obtener la sucursal del paciente directamente de la base de datos ─────
+  const { data: patient, error: patientError } = await supabase
+    .from("patients")
+    .select("branch_id")
+    .eq("id", patientId)
+    .single()
+
+  if (patientError || !patient) {
+    return {
+      success: false,
+      error: `No se pudo obtener la información del paciente: ${patientError?.message || "Paciente no encontrado"}.`,
+    }
+  }
+
+  const activeBranchId = patient.branch_id
 
   // — Validar extensión ────────────────────────────────────────────────────
   const lastDot   = file.name.lastIndexOf(".")

@@ -63,6 +63,13 @@ export async function createOdontogramRecord(input: OdontogramRecordInput) {
       .eq("tooth_face", input.tooth_face)
   }
 
+  // Si es un estado 'sano' para una cara específica, solo queríamos eliminar el registro existente.
+  // No insertamos nada porque la ausencia de registro representa 'sano' para esa cara.
+  if (input.status === "sano" && input.tooth_face !== null) {
+    revalidatePath(`/patients/${input.patient_id}`)
+    return { success: true }
+  }
+
   // Insertar el nuevo registro actualizado
   const { error } = await supabase.from("odontogram_records").insert({
     patient_id: input.patient_id,

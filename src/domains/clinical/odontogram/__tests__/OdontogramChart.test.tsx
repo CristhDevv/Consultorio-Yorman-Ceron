@@ -4,6 +4,12 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import OdontogramChart from '../components/OdontogramChart';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
+
 describe('OdontogramChart Component', () => {
   const mockOnSelectionSubmit = vi.fn();
 
@@ -31,26 +37,25 @@ describe('OdontogramChart Component', () => {
     expect(notesTextarea).toHaveValue('');
   });
 
-  it('2. general status hides face selector and shows whole-tooth message; non-general shows face selector', () => {
+  it('2. allows changing face and dynamic filtering of status options', () => {
     render(<OdontogramChart onSelectionSubmit={mockOnSelectionSubmit} />);
 
     fireEvent.click(screen.getByText('11'));
 
-    // 'sano' is a general status — face selector hidden, whole-tooth message visible
-    expect(
-      screen.getByText(/El diagnóstico seleccionado aplica a toda la pieza completa/i)
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    // Both comboboxes are always visible in the new design
+    const comboboxes = screen.getAllByRole('combobox');
+    expect(comboboxes).toHaveLength(2);
 
-    // Change to 'caries' — a non-general status
-    fireEvent.change(screen.getByDisplayValue('Sano'), { target: { value: 'caries' } });
+    // Default face is General, default status is Sano
+    expect(screen.getByDisplayValue('Toda la pieza (General)')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Sano')).toBeInTheDocument();
 
-    // Face selector now visible, whole-tooth message hidden
-    expect(
-      screen.queryByText(/El diagnóstico seleccionado aplica a toda la pieza completa/i)
-    ).not.toBeInTheDocument();
-    expect(screen.getAllByRole('combobox')).toHaveLength(2);
-    expect(screen.getByDisplayValue('Oclusal')).toBeInTheDocument();
+    // Changing face to Oclusal
+    fireEvent.change(comboboxes[0], { target: { value: 'Oclusal' } });
+
+    // Face selector reflects Oclusal, and status dropdown adapts (defaults to Sano)
+    expect(screen.getByDisplayValue('Oclusal (Centro)')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Sano / Limpiar diagnóstico')).toBeInTheDocument();
   });
 
   it('3. successful confirm calls onSelectionSubmit with correct payload (tooth_face null for general), shows success message and closes panel', async () => {

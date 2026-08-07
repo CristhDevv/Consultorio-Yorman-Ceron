@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   Users,
   CalendarDays,
@@ -176,6 +176,7 @@ export default function DashboardClientLayout({
   branchStatus: "success" | "no_branch"
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const router = useRouter()
 
   // Automatic synchronization of the active_branch_id cookie if required
   useEffect(() => {
@@ -186,6 +187,7 @@ export default function DashboardClientLayout({
 
   const handleBranchChange = async (branchId: string) => {
     await setActiveBranchCookie(branchId)
+    router.refresh()
   }
 
   return (

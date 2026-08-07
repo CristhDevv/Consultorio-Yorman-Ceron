@@ -7,14 +7,24 @@ import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/components/ui/card"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog"
+import {
   createStaffMember,
   demoteStaffMember,
   changeStaffRole,
+  updateDentistBranches,
   type StaffProfile,
 } from "../actions"
 
 interface StaffDashboardProps {
   initialStaff: StaffProfile[]
+  branches: Array<{ id: string; name: string }>
 }
 
 type DashboardState =
@@ -22,12 +32,61 @@ type DashboardState =
   | { status: "success"; message: string }
   | { status: "error"; message: string }
 
-export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
+export default function StaffDashboard({ initialStaff, branches }: StaffDashboardProps) {
   const [staff, setStaff] = useState<StaffProfile[]>(initialStaff)
   const [state, setState] = useState<DashboardState>({ status: "idle" })
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
 
+  // Estados para asignación de sucursales
+  const [editingDentist, setEditingDentist] = useState<StaffProfile | null>(null)
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([])
+  const [branchUpdateError, setBranchUpdateError] = useState<string | null>(null)
+  const [branchUpdatePending, setBranchUpdatePending] = useState(false)
+
+  const handleOpenBranchModal = (member: StaffProfile) => {
+    setEditingDentist(member)
+    setBranchUpdateError(null)
+    const activeIds = member.dentist_branches?.map((db) => db.branch_id) || []
+    setSelectedBranchIds(activeIds)
+  }
+
+  const handleToggleBranch = (branchId: string) => {
+    setSelectedBranchIds((prev) =>
+      prev.includes(branchId) ? prev.filter((id) => id !== branchId) : [...prev, branchId]
+    )
+  }
+
+  const handleSaveBranches = async () => {
+    if (!editingDentist) return
+    setBranchUpdatePending(true)
+    setBranchUpdateError(null)
+
+    const result = await updateDentistBranches(editingDentist.id, selectedBranchIds)
+    setBranchUpdatePending(false)
+
+    if (result.success) {
+      const updatedDentistBranches = selectedBranchIds.map((id) => ({
+        branch_id: id,
+        branches: { name: branches.find((b) => b.id === id)?.name || "" },
+      }))
+
+      setStaff((prev) =>
+        prev.map((s) =>
+          s.id === editingDentist.id
+            ? { ...s, dentist_branches: updatedDentistBranches }
+            : s
+        )
+      )
+      setEditingDentist(null)
+      setState({
+        status: "success",
+        message: `Sucursales de ${editingDentist.full_name || "odontólogo"} actualizadas correctamente.`,
+      })
+    } else {
+      setBranchUpdateError(result.error)
+    }
+  }
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -48,7 +107,7 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
       const result = await createStaffMember({ fullName, email, role, phone })
       if (result.success) {
         formRef.current?.reset()
-        setStaff((prev) => [...prev, result.data].sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")))
+        setStaff((prev) => [...prev, { ...result.data, dentist_branches: [] }].sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")))
         setState({
           status: "success",
           message: `El usuario ${fullName} ha sido registrado como ${role}. Contraseña por defecto: StaffPassword123!`,
@@ -84,7 +143,7 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
       const result = await changeStaffRole(id, newRole)
       if (result.success) {
         setStaff((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, role: newRole } : s))
+          prev.map((s) => (s.id === id ? { ...s, role: newRole, dentist_branches: [] } : s))
         )
         setState({ status: "success", message: `Rol de ${name} cambiado a ${newRole} exitosamente.` })
       } else {
@@ -103,6 +162,7 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
               <TableRow className="border-b border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground font-semibold">Nombre</TableHead>
                 <TableHead className="text-muted-foreground font-semibold">Rol</TableHead>
+                <TableHead className="text-muted-foreground font-semibold">Sucursales</TableHead>
                 <TableHead className="text-muted-foreground font-semibold">Teléfono</TableHead>
                 <TableHead className="text-right text-muted-foreground font-semibold">Acciones</TableHead>
               </TableRow>
@@ -110,7 +170,7 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
             <TableBody>
               {staff.length === 0 ? (
                 <TableRow className="border-b border-border hover:bg-transparent">
-                  <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
                     No hay personal médico o de administración registrado.
                   </TableCell>
                 </TableRow>
@@ -131,11 +191,41 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
                         </span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {member.role === "administrador" ? (
+                        <span className="text-xs text-muted-foreground italic font-medium">Acceso Global</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {member.dentist_branches && member.dentist_branches.length > 0 ? (
+                            member.dentist_branches.map((db) => (
+                              <span
+                                key={db.branch_id}
+                                className="bg-muted border border-border text-[#475569] text-[10px] px-1.5 py-0.5 rounded font-medium"
+                              >
+                                {db.branches?.name || "Sin Nombre"}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-red-500 font-medium">Sin sucursales</span>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {member.phone || "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {member.role === "odontologo" && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => handleOpenBranchModal(member)}
+                            className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 h-8 px-2.5 font-medium"
+                          >
+                            Sucursales
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="ghost"
@@ -150,7 +240,7 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
                           variant="ghost"
                           onClick={() => handleDemote(member.id, member.full_name || "")}
                           disabled={isPending}
-                          className="text-red-650 hover:text-red-700 hover:bg-red-50 h-8 px-2.5 font-medium"
+                          className="text-red-655 hover:text-red-700 hover:bg-red-50 h-8 px-2.5 font-medium"
                         >
                           Degradar
                         </Button>
@@ -258,6 +348,69 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
           </CardContent>
         </Card>
       </div>
+      {/* Modal para gestionar sucursales autorizadas */}
+      <Dialog open={editingDentist !== null} onOpenChange={(open) => !open && setEditingDentist(null)}>
+        <DialogContent className="bg-white border border-border sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Asignar Sucursales</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Selecciona las sucursales donde el odontólogo <strong className="text-foreground">{editingDentist?.full_name}</strong> está autorizado a atender.
+            </DialogDescription>
+          </DialogHeader>
+
+          {branchUpdateError && (
+            <div className="bg-red-50 border border-red-200 text-red-750 text-xs p-3 rounded-lg">
+              {branchUpdateError}
+            </div>
+          )}
+
+          <div className="grid gap-3 py-4">
+            {branches.map((branch) => {
+              const isChecked = selectedBranchIds.includes(branch.id)
+              return (
+                <label
+                  key={branch.id}
+                  className="flex items-center gap-3 p-3 border border-border rounded-xl hover:bg-muted/40 transition-colors cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => handleToggleBranch(branch.id)}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary border-border cursor-pointer"
+                    disabled={branchUpdatePending}
+                  />
+                  <div className="text-sm font-semibold text-foreground">{branch.name}</div>
+                </label>
+              )
+            })}
+            {branches.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                No hay sucursales activas en el sistema.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={branchUpdatePending}
+              onClick={() => setEditingDentist(null)}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={branchUpdatePending}
+              onClick={handleSaveBranches}
+              className="w-full sm:w-auto bg-primary hover:bg-primary/95 text-white"
+            >
+              {branchUpdatePending ? "Guardando..." : "Guardar Cambios"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

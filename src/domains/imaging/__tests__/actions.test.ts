@@ -47,7 +47,18 @@ describe('Imaging Actions', () => {
       auth: {
         getUser: vi.fn(),
       },
-      from: vi.fn(),
+      from: vi.fn().mockImplementation((tableName: string) => {
+        if (tableName === "patients") {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: () => Promise.resolve({ data: { branch_id: 'branch-test-uuid' }, error: null })
+              })
+            })
+          };
+        }
+        return {} as never;
+      }),
       storage: {
         from: vi.fn(),
       },
@@ -133,7 +144,22 @@ describe('Imaging Actions', () => {
       const mockSingle = vi.fn().mockResolvedValue({ data: { id: IMAGE_ID, file_path: 'path/to/img' }, error: null });
       const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
       const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
-      mockSupabase.from.mockReturnValue({ insert: mockInsert });
+
+      mockSupabase.from.mockImplementation((tableName: string) => {
+        if (tableName === "patients") {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: () => Promise.resolve({ data: { branch_id: 'branch-test-uuid' }, error: null })
+              })
+            })
+          };
+        }
+        if (tableName === "patient_images") {
+          return { insert: mockInsert };
+        }
+        return {} as never;
+      });
 
       const result = await uploadPatientImage(formData);
       expect(result.success).toBe(true);
@@ -159,7 +185,22 @@ describe('Imaging Actions', () => {
       const mockSingle = vi.fn().mockResolvedValue({ data: null, error: { message: 'DB Error' } });
       const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
       const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
-      mockSupabase.from.mockReturnValue({ insert: mockInsert });
+
+      mockSupabase.from.mockImplementation((tableName: string) => {
+        if (tableName === "patients") {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: () => Promise.resolve({ data: { branch_id: 'branch-test-uuid' }, error: null })
+              })
+            })
+          };
+        }
+        if (tableName === "patient_images") {
+          return { insert: mockInsert };
+        }
+        return {} as never;
+      });
 
       const result = await uploadPatientImage(formData);
       expect(result.success).toBe(false);
