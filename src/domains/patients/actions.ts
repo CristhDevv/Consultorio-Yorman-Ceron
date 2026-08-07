@@ -2,6 +2,8 @@
 
 import { createClient } from "@/shared/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
+import { resolveActiveBranch } from "@/domains/branches/session"
 
 export interface PatientInput {
   full_name: string
@@ -21,7 +23,24 @@ export interface PatientInput {
 export async function getPatients(query: string = "") {
   const supabase = await createClient()
 
-  let request = supabase.from("patients").select("*").order("full_name")
+  const { user, role } = await getCurrentUserWithRole()
+
+  let request = supabase
+    .from("patients")
+    .select(`
+      *,
+      branches (
+        id,
+        name
+      )
+    `)
+
+  if (user && role) {
+    const { activeBranchId } = await resolveActiveBranch(user.id, role)
+    if (activeBranchId && activeBranchId !== "all") {
+      request = request.eq("branch_id", activeBranchId)
+    }
+  }
 
   if (query) {
     request = request.or(
@@ -29,7 +48,7 @@ export async function getPatients(query: string = "") {
     )
   }
 
-  const { data, error } = await request
+  const { data, error } = await request.order("full_name")
 
   if (error) {
     throw new Error(`Error al obtener pacientes: ${error.message}`)
@@ -44,7 +63,13 @@ export async function getPatientById(id: string) {
 
   const { data, error } = await supabase
     .from("patients")
-    .select("*")
+    .select(`
+      *,
+      branches (
+        id,
+        name
+      )
+    `)
     .eq("id", id)
     .single()
 

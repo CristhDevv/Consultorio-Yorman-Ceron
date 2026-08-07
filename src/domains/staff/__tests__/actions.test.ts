@@ -23,6 +23,10 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }))
 
+vi.mock("@/domains/branches/session", () => ({
+  resolveActiveBranch: vi.fn().mockResolvedValue({ activeBranchId: "all" }),
+}))
+
 interface MockSupabase {
   auth: { getUser: ReturnType<typeof vi.fn> }
   from: ReturnType<typeof vi.fn>

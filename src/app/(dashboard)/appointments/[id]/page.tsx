@@ -159,6 +159,14 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
               </span>
             </div>
 
+            {/* Sucursal */}
+            <div className="grid grid-cols-3 gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">Sucursal:</span>
+              <span className="col-span-2 text-sm text-foreground font-semibold">
+                {appointment.branches?.name ?? <span className="text-muted-foreground/60">—</span>}
+              </span>
+            </div>
+
             {/* Fecha y Hora */}
             <div className="grid grid-cols-3 gap-2">
               <span className="text-sm font-semibold text-muted-foreground">Fecha y Hora:</span>

@@ -2,6 +2,8 @@
 
 import { createClient } from "@/shared/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
+import { resolveActiveBranch } from "@/domains/branches/session"
 
 import { getAvailableSlots } from "./availability"
 import { sendConfirmationEmail } from "../communications/email"
@@ -33,7 +35,9 @@ export async function getAppointments() {
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
   const dateLimit = ninetyDaysAgo.toISOString()
 
-  const { data, error } = await supabase
+  const { user, role } = await getCurrentUserWithRole()
+
+  let query = supabase
     .from("appointments")
     .select(`
       *,
@@ -45,10 +49,22 @@ export async function getAppointments() {
       profiles (
         id,
         full_name
+      ),
+      branches (
+        id,
+        name
       )
     `)
     .gte("starts_at", dateLimit)
-    .order("starts_at")
+
+  if (user && role) {
+    const { activeBranchId } = await resolveActiveBranch(user.id, role)
+    if (activeBranchId && activeBranchId !== "all") {
+      query = query.eq("branch_id", activeBranchId)
+    }
+  }
+
+  const { data, error } = await query.order("starts_at")
 
   if (error) {
     throw new Error(`Error al obtener citas: ${error.message}`)
@@ -77,6 +93,10 @@ export async function getAppointmentById(id: string) {
       profiles (
         id,
         full_name
+      ),
+      branches (
+        id,
+        name
       )
     `)
     .eq("id", id)

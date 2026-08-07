@@ -1,14 +1,23 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { getFinancialReport } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
+import { getCurrentUserWithRole } from '@/shared/lib/supabase/auth';
+import { resolveActiveBranch } from '@/domains/branches/session';
 
 vi.mock('@/shared/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
 
+vi.mock('@/shared/lib/supabase/auth', () => ({
+  getCurrentUserWithRole: vi.fn(),
+}));
+
+vi.mock('@/domains/branches/session', () => ({
+  resolveActiveBranch: vi.fn(),
+}));
+
 describe('getFinancialReport Server Action', () => {
   let mockSupabase: {
-    auth: { getUser: ReturnType<typeof vi.fn> };
     rpc: ReturnType<typeof vi.fn>;
   };
 
@@ -16,9 +25,6 @@ describe('getFinancialReport Server Action', () => {
     vi.clearAllMocks();
 
     mockSupabase = {
-      auth: {
-        getUser: vi.fn(),
-      },
       rpc: vi.fn(),
     };
 
@@ -26,17 +32,25 @@ describe('getFinancialReport Server Action', () => {
       mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>
     );
 
-    // Default to authenticated user
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'admin-user-id' } },
-      error: null,
+    // Default to authenticated administrator
+    vi.mocked(getCurrentUserWithRole).mockResolvedValue({
+      user: { id: 'admin-user-id' } as any,
+      profile: { role: 'administrador' } as any,
+      role: 'administrador',
+    });
+
+    vi.mocked(resolveActiveBranch).mockResolvedValue({
+      status: 'success',
+      activeBranchId: 'all',
+      shouldSync: false,
     });
   });
 
   it('1. should return error if session is not active', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: new Error('Session expired'),
+    vi.mocked(getCurrentUserWithRole).mockResolvedValue({
+      user: null,
+      profile: null,
+      role: null,
     });
 
     const result = await getFinancialReport('2026-07-01', '2026-07-31');
@@ -73,6 +87,7 @@ describe('getFinancialReport Server Action', () => {
     expect(mockSupabase.rpc).toHaveBeenCalledWith('get_financial_report', {
       p_date_from: '2026-07-01',
       p_date_to: '2026-07-31',
+      p_branch_id: 'all',
     });
   });
 

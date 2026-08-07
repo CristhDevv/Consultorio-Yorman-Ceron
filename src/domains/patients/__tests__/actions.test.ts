@@ -147,7 +147,7 @@ describe('Patients Actions', () => {
         'Error al obtener detalle del paciente: Row not found'
       );
       expect(mockSupabase.from).toHaveBeenCalledWith('patients');
-      expect(mockSelect).toHaveBeenCalledWith('*');
+      expect(mockSelect).toHaveBeenCalledWith(expect.stringContaining('branches'));
       expect(mockEq).toHaveBeenCalledWith('id', 'non-existent-id');
     });
   });

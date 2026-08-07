@@ -18,6 +18,10 @@ interface Patient {
   current_medications: string | null
   medical_observations: string | null
   created_at: string
+  branches?: {
+    id: string
+    name: string
+  } | null
 }
 
 interface PatientDetailCardProps {
@@ -63,6 +67,11 @@ export default function PatientDetailCard({ patient }: PatientDetailCardProps) {
             <div className="flex flex-col gap-0.5 border-b border-border/60 pb-3">
               <span className="text-xs text-muted-foreground">Documento o Cédula:</span>
               <span className="font-mono text-foreground font-semibold">{patient.document_id}</span>
+            </div>
+
+            <div className="flex flex-col gap-0.5 border-b border-border/60 pb-3">
+              <span className="text-xs text-muted-foreground">Sucursal:</span>
+              <span className="text-foreground font-semibold">{patient.branches?.name || "No especificada"}</span>
             </div>
             
             <div className="flex flex-col gap-0.5 border-b border-border/60 pb-3">

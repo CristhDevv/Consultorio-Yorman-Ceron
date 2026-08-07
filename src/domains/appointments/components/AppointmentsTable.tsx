@@ -25,6 +25,10 @@ interface Appointment {
     id: string
     full_name: string | null
   } | null
+  branches?: {
+    id: string
+    name: string
+  } | null
 }
 
 interface AppointmentsTableProps {
@@ -130,6 +134,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
               <TableHead className="text-muted-foreground font-semibold">Fecha y Hora</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Paciente</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Odontólogo</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Sucursal</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Estado</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Motivo</TableHead>
               <TableHead className="text-right text-muted-foreground font-semibold">Acciones</TableHead>
@@ -138,7 +143,7 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
           <TableBody>
             {paginatedAppointments.length === 0 ? (
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                   {search
                     ? "No se encontraron citas que coincidan con la búsqueda."
                     : "No hay citas registradas en el sistema."}
@@ -158,6 +163,9 @@ export default function AppointmentsTable({ initialAppointments }: AppointmentsT
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {appointment.profiles?.full_name ?? <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs font-semibold">
+                    {appointment.branches?.name ?? <span className="text-muted-foreground/60">—</span>}
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={appointment.status} />

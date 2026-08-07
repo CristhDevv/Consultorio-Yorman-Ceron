@@ -15,6 +15,10 @@ interface Patient {
   birth_date: string
   allergies: string | null
   diseases: string | null
+  branches?: {
+    id: string
+    name: string
+  } | null
 }
 
 interface PatientTableProps {
@@ -72,6 +76,7 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
             <TableRow className="border-b border-border hover:bg-transparent">
               <TableHead className="text-muted-foreground font-semibold">Paciente</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Documento</TableHead>
+              <TableHead className="text-muted-foreground font-semibold">Sucursal</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Teléfono</TableHead>
               <TableHead className="text-muted-foreground font-semibold">F. Nacimiento</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Alertas Médicas</TableHead>
@@ -81,7 +86,7 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
           <TableBody>
             {paginatedPatients.length === 0 ? (
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                   No se encontraron pacientes registrados en el sistema.
                 </TableCell>
               </TableRow>
@@ -98,6 +103,9 @@ export default function PatientTable({ initialPatients }: PatientTableProps) {
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {patient.document_id}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs font-semibold">
+                      {patient.branches?.name ?? <span className="text-muted-foreground/60">—</span>}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {patient.phone || "—"}

@@ -2,6 +2,8 @@
 
 import { createClient } from "@/shared/lib/supabase/server"
 import { FinancialReportResponse } from "./types"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
+import { resolveActiveBranch } from "@/domains/branches/session"
 
 export type ActionResult<T = null> =
   | { success: true; data: T }
@@ -19,19 +21,19 @@ export async function getFinancialReport(
   const supabase = await createClient()
 
   // 1. Session verification
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  const { user, role } = await getCurrentUserWithRole()
 
-  if (authError || !user) {
+  if (!user) {
     return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
   }
 
-  // 2. Call RPC get_financial_report
+  const { activeBranchId } = await resolveActiveBranch(user.id, role || "")
+
+  // 2. Call RPC get_financial_report with branch filter
   const { data, error: rpcError } = await supabase.rpc("get_financial_report", {
     p_date_from: dateFrom,
     p_date_to: dateTo,
+    p_branch_id: activeBranchId || null,
   })
 
   if (rpcError) {

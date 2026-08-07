@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/shared/lib/supabase/server"
 import { Database } from "@/shared/types/database.types"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
+import { resolveActiveBranch } from "@/domains/branches/session"
 
 export type InventoryProduct = Database["public"]["Tables"]["inventory_products"]["Row"]
 
@@ -17,10 +19,20 @@ export type ActionResult<T = null> =
 export async function getInventoryProducts(): Promise<InventoryProduct[]> {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  const { user, role } = await getCurrentUserWithRole()
+
+  let query = supabase
     .from("inventory_products")
     .select("*")
-    .order("name", { ascending: true })
+
+  if (user && role) {
+    const { activeBranchId } = await resolveActiveBranch(user.id, role)
+    if (activeBranchId && activeBranchId !== "all") {
+      query = query.eq("branch_id", activeBranchId)
+    }
+  }
+
+  const { data, error } = await query.order("name", { ascending: true })
 
   if (error) {
     throw new Error(`Error al obtener productos del inventario: ${error.message}`)

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/shared/lib/supabase/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { resolveActiveBranch } from "@/domains/branches/session"
 
 export interface StaffProfile {
   id: string
@@ -63,7 +64,20 @@ export async function getStaffMembers(): Promise<StaffProfile[]> {
     throw new Error(`Error al obtener personal: ${error.message}`)
   }
 
-  return data as StaffProfile[]
+  let staffList = data as StaffProfile[]
+
+  // Filtramos la lista según la sucursal activa seleccionada.
+  // Los administradores se muestran siempre (acceso global).
+  // Los odontólogos se filtran para que solo aparezcan si están asociados a la sucursal activa.
+  const { activeBranchId } = await resolveActiveBranch(user.id, profile.role)
+  if (activeBranchId && activeBranchId !== "all") {
+    staffList = staffList.filter((member) =>
+      member.role === "administrador" ||
+      (member.dentist_branches && member.dentist_branches.some((db) => db.branch_id === activeBranchId))
+    )
+  }
+
+  return staffList
 }
 
 // 2. Crear un nuevo miembro del personal
