@@ -17,7 +17,7 @@ export type Database = {
       appointments: {
         Row: {
           amount: number | null
-          branch_id: string | null
+          branch_id: string
           created_at: string
           created_by: string
           dentist_id: string
@@ -32,7 +32,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
-          branch_id?: string | null
+          branch_id: string
           created_at?: string
           created_by: string
           dentist_id: string
@@ -47,7 +47,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
-          branch_id?: string | null
+          branch_id?: string
           created_at?: string
           created_by?: string
           dentist_id?: string
@@ -111,7 +111,7 @@ export type Database = {
       communication_logs: {
         Row: {
           appointment_id: string
-          branch_id: string | null
+          branch_id: string
           channel: string
           created_at: string
           created_by: string
@@ -124,7 +124,7 @@ export type Database = {
         }
         Insert: {
           appointment_id: string
-          branch_id?: string | null
+          branch_id: string
           channel: string
           created_at?: string
           created_by: string
@@ -137,7 +137,7 @@ export type Database = {
         }
         Update: {
           appointment_id?: string
-          branch_id?: string | null
+          branch_id?: string
           channel?: string
           created_at?: string
           created_by?: string
@@ -204,7 +204,7 @@ export type Database = {
       }
       inventory_movements: {
         Row: {
-          branch_id: string | null
+          branch_id: string
           created_at: string
           created_by: string
           id: string
@@ -214,7 +214,7 @@ export type Database = {
           type: string
         }
         Insert: {
-          branch_id?: string | null
+          branch_id: string
           created_at?: string
           created_by: string
           id?: string
@@ -224,7 +224,7 @@ export type Database = {
           type: string
         }
         Update: {
-          branch_id?: string | null
+          branch_id?: string
           created_at?: string
           created_by?: string
           id?: string
@@ -252,7 +252,7 @@ export type Database = {
       }
       inventory_products: {
         Row: {
-          branch_id: string | null
+          branch_id: string
           created_at: string
           created_by: string
           current_stock: number
@@ -263,7 +263,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          branch_id?: string | null
+          branch_id: string
           created_at?: string
           created_by: string
           current_stock?: number
@@ -274,7 +274,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          branch_id?: string | null
+          branch_id?: string
           created_at?: string
           created_by?: string
           current_stock?: number
@@ -337,7 +337,7 @@ export type Database = {
       }
       patient_documents: {
         Row: {
-          branch_id: string | null
+          branch_id: string
           bucket_id: string
           created_at: string
           deleted_at: string | null
@@ -351,7 +351,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
-          branch_id?: string | null
+          branch_id: string
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -365,7 +365,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
-          branch_id?: string | null
+          branch_id?: string
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -397,7 +397,7 @@ export type Database = {
       }
       patient_images: {
         Row: {
-          branch_id: string | null
+          branch_id: string
           bucket_id: string
           created_at: string
           deleted_at: string | null
@@ -411,7 +411,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
-          branch_id?: string | null
+          branch_id: string
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -425,7 +425,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
-          branch_id?: string | null
+          branch_id?: string
           bucket_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -459,7 +459,7 @@ export type Database = {
         Row: {
           amount: number
           appointment_id: string
-          branch_id: string | null
+          branch_id: string
           created_at: string
           created_by: string
           id: string
@@ -471,7 +471,7 @@ export type Database = {
         Insert: {
           amount: number
           appointment_id: string
-          branch_id?: string | null
+          branch_id: string
           created_at?: string
           created_by: string
           id?: string
@@ -483,7 +483,7 @@ export type Database = {
         Update: {
           amount?: number
           appointment_id?: string
-          branch_id?: string | null
+          branch_id?: string
           created_at?: string
           created_by?: string
           id?: string
@@ -528,7 +528,7 @@ export type Database = {
           address: string | null
           allergies: string | null
           birth_date: string
-          branch_id: string | null
+          branch_id: string
           created_at: string
           created_by: string
           current_medications: string | null
@@ -545,7 +545,7 @@ export type Database = {
           address?: string | null
           allergies?: string | null
           birth_date: string
-          branch_id?: string | null
+          branch_id: string
           created_at?: string
           created_by: string
           current_medications?: string | null
@@ -562,7 +562,7 @@ export type Database = {
           address?: string | null
           allergies?: string | null
           birth_date?: string
-          branch_id?: string | null
+          branch_id?: string
           created_at?: string
           created_by?: string
           current_medications?: string | null
