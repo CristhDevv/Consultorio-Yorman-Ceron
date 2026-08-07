@@ -4,6 +4,7 @@ import { createClient } from "@/shared/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { resolveActiveBranch } from "@/domains/branches/session"
+import { ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 
 import { getAvailableSlots } from "./availability"
 import { sendConfirmationEmail } from "../communications/email"
@@ -59,7 +60,7 @@ export async function getAppointments() {
 
   if (user && role) {
     const { activeBranchId } = await resolveActiveBranch(user.id, role)
-    if (activeBranchId && activeBranchId !== "all") {
+    if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
       query = query.eq("branch_id", activeBranchId)
     }
   }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/shared/lib/supabase/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { resolveActiveBranch } from "@/domains/branches/session"
+import { ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 
 export interface StaffProfile {
   id: string
@@ -70,7 +71,7 @@ export async function getStaffMembers(): Promise<StaffProfile[]> {
   // Los administradores se muestran siempre (acceso global).
   // Los odontólogos se filtran para que solo aparezcan si están asociados a la sucursal activa.
   const { activeBranchId } = await resolveActiveBranch(user.id, profile.role)
-  if (activeBranchId && activeBranchId !== "all") {
+  if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
     staffList = staffList.filter((member) =>
       member.role === "administrador" ||
       (member.dentist_branches && member.dentist_branches.some((db) => db.branch_id === activeBranchId))

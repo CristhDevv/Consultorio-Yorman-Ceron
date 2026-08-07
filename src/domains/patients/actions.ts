@@ -4,6 +4,7 @@ import { createClient } from "@/shared/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { resolveActiveBranch } from "@/domains/branches/session"
+import { ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 
 export interface PatientInput {
   full_name: string
@@ -37,7 +38,7 @@ export async function getPatients(query: string = "") {
 
   if (user && role) {
     const { activeBranchId } = await resolveActiveBranch(user.id, role)
-    if (activeBranchId && activeBranchId !== "all") {
+    if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
       request = request.eq("branch_id", activeBranchId)
     }
   }

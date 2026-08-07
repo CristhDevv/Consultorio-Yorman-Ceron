@@ -5,6 +5,7 @@ import { createClient } from "@/shared/lib/supabase/server"
 import { Database } from "@/shared/types/database.types"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { resolveActiveBranch } from "@/domains/branches/session"
+import { ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 
 export type InventoryProduct = Database["public"]["Tables"]["inventory_products"]["Row"]
 
@@ -27,7 +28,7 @@ export async function getInventoryProducts(): Promise<InventoryProduct[]> {
 
   if (user && role) {
     const { activeBranchId } = await resolveActiveBranch(user.id, role)
-    if (activeBranchId && activeBranchId !== "all") {
+    if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
       query = query.eq("branch_id", activeBranchId)
     }
   }

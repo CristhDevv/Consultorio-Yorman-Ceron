@@ -34,14 +34,14 @@ describe('getFinancialReport Server Action', () => {
 
     // Default to authenticated administrator
     vi.mocked(getCurrentUserWithRole).mockResolvedValue({
-      user: { id: 'admin-user-id' } as any,
-      profile: { role: 'administrador' } as any,
+      user: { id: 'admin-user-id' } as never,
+      profile: { role: 'administrador' } as never,
       role: 'administrador',
     });
 
     vi.mocked(resolveActiveBranch).mockResolvedValue({
       status: 'success',
-      activeBranchId: 'all',
+      activeBranchId: 'ALL_BRANCHES',
       shouldSync: false,
     });
   });
@@ -87,7 +87,7 @@ describe('getFinancialReport Server Action', () => {
     expect(mockSupabase.rpc).toHaveBeenCalledWith('get_financial_report', {
       p_date_from: '2026-07-01',
       p_date_to: '2026-07-31',
-      p_branch_id: 'all',
+      p_branch_id: 'ALL_BRANCHES',
     });
   });
 

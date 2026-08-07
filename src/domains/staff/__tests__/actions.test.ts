@@ -24,7 +24,7 @@ vi.mock("next/cache", () => ({
 }))
 
 vi.mock("@/domains/branches/session", () => ({
-  resolveActiveBranch: vi.fn().mockResolvedValue({ activeBranchId: "all" }),
+  resolveActiveBranch: vi.fn().mockResolvedValue({ activeBranchId: "ALL_BRANCHES" }),
 }))
 
 interface MockSupabase {
