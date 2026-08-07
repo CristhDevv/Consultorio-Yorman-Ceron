@@ -3,15 +3,26 @@
 import { useState, useTransition, useRef } from "react"
 import { createInventoryProduct, type ProductInput, type InventoryProduct } from "@/domains/inventory/actions"
 
+interface AllowedBranch {
+  id: string
+  name: string
+}
+
+interface ProductFormProps {
+  allowedBranches?: AllowedBranch[]
+  defaultBranchId?: string | null
+}
+
 type FormState =
   | { status: "idle" }
   | { status: "success"; product: InventoryProduct }
   | { status: "error"; message: string }
 
-export default function ProductForm() {
+export default function ProductForm({ allowedBranches, defaultBranchId }: ProductFormProps) {
   const [state, setState] = useState<FormState>({ status: "idle" })
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
+  const branchesList = allowedBranches || []
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -21,6 +32,7 @@ export default function ProductForm() {
     const unit = (formData.get("unit") as string).trim()
     const minStockRaw = formData.get("minStock") as string
     const currentStockRaw = formData.get("currentStock") as string
+    const branchId = formData.get("branchId") as string || null
 
     const minStock = parseInt(minStockRaw, 10)
     const currentStock = parseInt(currentStockRaw, 10)
@@ -43,7 +55,7 @@ export default function ProductForm() {
     }
 
     startTransition(async () => {
-      const result = await createInventoryProduct({ name, unit, minStock, currentStock })
+      const result = await createInventoryProduct({ name, unit, minStock, currentStock, branchId })
 
       if (result.success) {
         formRef.current?.reset()
@@ -201,6 +213,32 @@ export default function ProductForm() {
                        disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             disabled={isPending}
           />
+        </div>
+
+        {/* Sucursal */}
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <label
+            htmlFor="product-branch"
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+          >
+            Sucursal
+          </label>
+          <select
+            id="product-branch"
+            name="branchId"
+            defaultValue={defaultBranchId || ""}
+            className="bg-white border border-border rounded-lg px-3 py-2.5 text-sm text-foreground
+                       focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            disabled={isPending}
+          >
+            <option value="">Sin sucursal asignada (Global)</option>
+            {branchesList.map(b => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Botón de envío */}

@@ -379,6 +379,79 @@ describe('createInventoryProduct', () => {
       min_stock: 5,
       current_stock: 50,
       created_by: ADMIN_USER.id,
+      branch_id: null,
+    });
+
+    expect(revalidatePath).toHaveBeenCalledWith('/inventory');
+  });
+
+  it('debe crear un producto con sucursal exitosamente si el usuario es administrador', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({
+      data: { role: 'administrador' },
+      error: null,
+    });
+
+    const mockInsert = vi.fn().mockReturnThis();
+    const mockSelect = vi.fn().mockReturnThis();
+    const mockSingleResponse = vi.fn().mockResolvedValue({
+      data: {
+        id: 'new-product-uuid',
+        name: 'Guantes de Nitrilo',
+        unit: 'Cajas',
+        min_stock: 5,
+        current_stock: 50,
+        branch_id: 'branch-uuid',
+      },
+      error: null,
+    });
+
+    mockSupabase.from.mockImplementation((tableName: string) => {
+      if (tableName === 'profiles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: mockSingle,
+            }),
+          }),
+        };
+      }
+      if (tableName === 'inventory_products') {
+        return {
+          insert: mockInsert,
+          select: mockSelect,
+          single: mockSingleResponse,
+        };
+      }
+      return {};
+    });
+
+    const result = await createInventoryProduct({
+      name: 'Guantes de Nitrilo',
+      unit: 'Cajas',
+      minStock: 5,
+      currentStock: 50,
+      branchId: 'branch-uuid',
+    });
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        id: 'new-product-uuid',
+        name: 'Guantes de Nitrilo',
+        unit: 'Cajas',
+        min_stock: 5,
+        current_stock: 50,
+        branch_id: 'branch-uuid',
+      },
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith({
+      name: 'Guantes de Nitrilo',
+      unit: 'Cajas',
+      min_stock: 5,
+      current_stock: 50,
+      created_by: ADMIN_USER.id,
+      branch_id: 'branch-uuid',
     });
 
     expect(revalidatePath).toHaveBeenCalledWith('/inventory');

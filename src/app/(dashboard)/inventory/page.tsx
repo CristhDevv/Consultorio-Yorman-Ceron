@@ -2,6 +2,7 @@ import React from "react"
 import { redirect } from "next/navigation"
 import { createClient } from "@/shared/lib/supabase/server"
 import { getInventoryProducts } from "@/domains/inventory/actions"
+import { getAllowedBranches, resolveActiveBranch } from "@/domains/branches/session"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
 import MovementForm from "@/domains/inventory/components/MovementForm"
 import ProductForm from "@/domains/inventory/components/ProductForm"
@@ -34,6 +35,8 @@ export default async function InventoryPage() {
     redirect("/")
   }
 
+  const allowedBranches = await getAllowedBranches(user.id, profile.role)
+  const resolvedBranch = await resolveActiveBranch(user.id, profile.role)
   const products = await getInventoryProducts()
 
   return (
@@ -106,7 +109,10 @@ export default async function InventoryPage() {
 
       {/* ── Formularios de Gestión de Inventario ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ProductForm />
+        <ProductForm
+          allowedBranches={allowedBranches}
+          defaultBranchId={resolvedBranch.activeBranchId}
+        />
         <MovementForm products={products} />
       </div>
     </div>

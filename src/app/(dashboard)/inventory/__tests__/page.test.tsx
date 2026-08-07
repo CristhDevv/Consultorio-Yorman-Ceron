@@ -21,6 +21,12 @@ vi.mock('@/domains/inventory/actions', () => ({
   getInventoryProducts: vi.fn(),
 }))
 
+// Mock Branches Session Helpers
+vi.mock('@/domains/branches/session', () => ({
+  getAllowedBranches: vi.fn().mockResolvedValue([]),
+  resolveActiveBranch: vi.fn().mockResolvedValue({ activeBranchId: null }),
+}))
+
 interface MockSupabase {
   auth: { getUser: ReturnType<typeof vi.fn> };
   from: ReturnType<typeof vi.fn>;
