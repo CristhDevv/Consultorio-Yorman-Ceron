@@ -23,16 +23,6 @@ interface MockSupabase {
 describe('Odontogram Actions', () => {
   let mockSupabase: MockSupabase;
 
-  // Helper: crea un mock de cadena de delete (delete().eq().eq().eq() o .is())
-  function makeDeleteChain(resolveValue = { error: null }) {
-    const mockResolve = vi.fn().mockResolvedValue(resolveValue);
-    const mockIs   = vi.fn().mockReturnValue({ then: mockResolve, catch: vi.fn(), finally: vi.fn() });
-    const mockEq3  = vi.fn().mockReturnValue({ is: mockIs, then: mockResolve });
-    const mockEq2  = vi.fn().mockReturnValue({ eq: mockEq3, is: mockIs });
-    const mockEq1  = vi.fn().mockReturnValue({ eq: mockEq2 });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq1 });
-    return { mockDelete, mockEq1, mockEq2, mockEq3, mockIs };
-  }
 
   beforeEach(() => {
     vi.clearAllMocks();

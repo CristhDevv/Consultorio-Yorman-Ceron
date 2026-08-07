@@ -140,7 +140,7 @@ describe("Staff Actions", () => {
 
       vi.mocked(createSupabaseClient).mockReturnValue({
         auth: { signUp: mockSignUp },
-      } as any)
+      } as unknown as ReturnType<typeof createSupabaseClient>)
 
       const result = await createStaffMember({
         fullName: "Dr. Alejandro Díaz",
@@ -198,7 +198,7 @@ describe("Staff Actions", () => {
 
       vi.mocked(createSupabaseClient).mockReturnValue({
         auth: { signUp: mockSignUp },
-      } as any)
+      } as unknown as ReturnType<typeof createSupabaseClient>)
 
       const result = await createStaffMember({
         fullName: "Dr. Alejandro Díaz",

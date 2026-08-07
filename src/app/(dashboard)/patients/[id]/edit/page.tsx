@@ -1,7 +1,7 @@
 import React from "react"
 import { getPatientById, updatePatient, type PatientInput } from "@/domains/patients/actions"
 import PatientForm from "@/domains/patients/components/PatientForm"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getAllowedBranches } from "@/domains/branches/session"
 
 export const metadata = {
@@ -17,20 +17,9 @@ export default async function EditPatientPage({ params }: PageProps) {
   const { id } = await params
   const patient = await getPatientById(id)
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, role } = await getCurrentUserWithRole()
 
-  let role = ""
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-    role = profile?.role || ""
-  }
-
-  const allowedBranches = user ? await getAllowedBranches(user.id, role) : []
+  const allowedBranches = user ? await getAllowedBranches(user.id, role || "") : []
 
   const handleUpdate = async (data: Partial<PatientInput>) => {
     "use server"

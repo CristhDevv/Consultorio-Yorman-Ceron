@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState("paciente")
+  const role = "paciente"
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

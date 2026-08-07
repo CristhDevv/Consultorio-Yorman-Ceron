@@ -1,5 +1,5 @@
 import React from "react"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getPatientById } from "@/domains/patients/actions"
 import PatientDetailCard from "@/domains/patients/components/PatientDetailCard"
 import { getOdontogramByPatient, createOdontogramRecord } from "@/domains/clinical/odontogram/actions"
@@ -45,20 +45,9 @@ export default async function PatientDetailPage({ params }: PageProps) {
     : []
 
   // — Rol del usuario actual (mismo patrón que dashboard layout) ────────────
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { role } = await getCurrentUserWithRole()
 
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single()
-    : { data: null }
-
-  const canDelete = profile?.role === "administrador"
+  const canDelete = role === "administrador"
 
   // — Documentos del paciente ───────────────────────────────────────────────
   const documentsResult = await getPatientDocuments(id)

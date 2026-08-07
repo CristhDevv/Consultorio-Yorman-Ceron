@@ -379,7 +379,7 @@ describe('createInventoryProduct', () => {
       min_stock: 5,
       current_stock: 50,
       created_by: ADMIN_USER.id,
-      branch_id: null,
+      branch_id: undefined,
     });
 
     expect(revalidatePath).toHaveBeenCalledWith('/inventory');

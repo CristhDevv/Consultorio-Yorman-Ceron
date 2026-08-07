@@ -1,4 +1,4 @@
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { redirect } from "next/navigation"
 import {
   Users,
@@ -21,23 +21,13 @@ const QUICK_LINKS = [
 ]
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const { user, profile, role } = await getCurrentUserWithRole()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single()
-
-  const isAdmin = profile?.role === "administrador"
+  const isAdmin = role === "administrador"
   const links = isAdmin ? QUICK_LINKS : QUICK_LINKS.slice(0, 2)
 
   const firstName = profile?.full_name?.split(" ")[0] ?? "Profesional"

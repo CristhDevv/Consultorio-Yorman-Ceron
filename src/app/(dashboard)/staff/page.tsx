@@ -1,6 +1,6 @@
 import React from "react"
 import { redirect } from "next/navigation"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getStaffMembers } from "@/domains/staff/actions"
 import StaffDashboard from "@/domains/staff/components/StaffDashboard"
 
@@ -10,25 +10,13 @@ export const metadata = {
 }
 
 export default async function StaffPage() {
-  const supabase = await createClient()
+  const { user, profile, role } = await getCurrentUserWithRole()
 
-  // 1. Verificar sesión activa
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
 
-  // 2. Verificar rol administrador en tiempo real
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
-  if (profile?.role !== "administrador") {
+  if (role !== "administrador") {
     redirect("/")
   }
 

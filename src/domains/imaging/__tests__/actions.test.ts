@@ -7,10 +7,20 @@ import {
   restorePatientImage,
 } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
+import { getCurrentUserWithRole } from '@/shared/lib/supabase/auth';
+import { resolveActiveBranch } from '@/domains/branches/session';
 import { revalidatePath } from 'next/cache';
 
 vi.mock('@/shared/lib/supabase/server', () => ({
   createClient: vi.fn(),
+}));
+
+vi.mock('@/shared/lib/supabase/auth', () => ({
+  getCurrentUserWithRole: vi.fn(),
+}));
+
+vi.mock('@/domains/branches/session', () => ({
+  resolveActiveBranch: vi.fn(),
 }));
 
 vi.mock('next/cache', () => ({
@@ -51,11 +61,23 @@ describe('Imaging Actions', () => {
       data: { user: AUTHENTICATED_USER },
       error: null,
     });
+
+    vi.mocked(getCurrentUserWithRole).mockResolvedValue({
+      user: AUTHENTICATED_USER,
+      profile: { id: AUTHENTICATED_USER.id, role: 'administrador', full_name: 'Admin' } as never,
+      role: 'administrador',
+    });
+
+    vi.mocked(resolveActiveBranch).mockResolvedValue({ activeBranchId: 'branch-test-uuid' });
   });
 
   describe('uploadPatientImage', () => {
     it('should fail if session is missing', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+      vi.mocked(getCurrentUserWithRole).mockResolvedValue({
+        user: null,
+        profile: null,
+        role: null,
+      });
       const formData = new FormData();
       const result = await uploadPatientImage(formData);
       expect(result.success).toBe(false);

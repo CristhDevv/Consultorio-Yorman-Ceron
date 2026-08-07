@@ -1,6 +1,6 @@
 import React from "react"
 import Link from "next/link"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getAppointmentById } from "@/domains/appointments/actions"
 import AppointmentStatusControl from "@/domains/appointments/components/AppointmentStatusControl"
 import PaymentForm from "@/domains/finance/components/PaymentForm"
@@ -73,18 +73,8 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
   // Consulta de rol en tiempo real — mismo patrón que el layout del dashboard.
   // No se reutiliza el valor del layout padre; se verifica de forma independiente
   // para mantener el principio de nunca confiar en un rol cacheado o heredado.
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single()
-    : { data: null }
-  const isAdmin = profile?.role === "administrador"
+  const { role } = await getCurrentUserWithRole()
+  const isAdmin = role === "administrador"
 
   const appointment = await getAppointmentById(id)
 

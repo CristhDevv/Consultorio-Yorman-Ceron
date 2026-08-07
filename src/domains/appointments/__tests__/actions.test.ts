@@ -102,7 +102,7 @@ describe('Appointments Actions', () => {
         status: 'programada',
         reason: 'Consulta general',
         notes: 'Primer control dental',
-        branch_id: null,
+        branch_id: undefined,
         created_by: 'user-789',
       });
       expect(revalidatePath).toHaveBeenCalledWith('/appointments');

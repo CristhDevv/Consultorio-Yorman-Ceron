@@ -1,31 +1,18 @@
 import React from "react"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { redirect } from "next/navigation"
 import { getPatients } from "@/domains/patients/actions"
 import FinanceDashboard from "@/domains/finance/components/FinanceDashboard"
 
 export default async function FinancePage() {
-  const supabase = await createClient()
+  const { user, profile, role } = await getCurrentUserWithRole()
 
-  // 1. Session verification
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
 
-  // 2. Real-time role check (security block)
-  // Permite acceso a administradores y odontólogos, pero no a pacientes.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
   const allowedRoles = ["administrador", "odontologo"]
-  if (!profile || !allowedRoles.includes(profile.role)) {
+  if (!role || !allowedRoles.includes(role)) {
     redirect("/portal")
   }
 

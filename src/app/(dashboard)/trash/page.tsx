@@ -1,5 +1,5 @@
 import React from "react"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { redirect } from "next/navigation"
 import { getAllDeletedDocuments, restorePatientDocument } from "@/domains/patients/documents/actions"
 import TrashDashboard from "@/domains/patients/documents/components/TrashDashboard"
@@ -10,24 +10,13 @@ export const metadata = {
 }
 
 export default async function TrashPage() {
-  const supabase = await createClient()
+  const { user, profile, role } = await getCurrentUserWithRole()
 
-  // — Validar sesión y rol de administrador en el servidor ─────────────────
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
-  if (!profile || profile.role !== "administrador") {
+  if (role !== "administrador") {
     redirect("/")
   }
 

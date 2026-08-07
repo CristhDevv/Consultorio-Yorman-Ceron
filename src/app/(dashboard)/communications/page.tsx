@@ -1,6 +1,6 @@
 import React from "react"
 import { redirect } from "next/navigation"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getCommunicationLogs, getPatientsWithCommunicationLogs } from "@/domains/communications/actions"
 import CommunicationLogsDashboard from "@/domains/communications/components/CommunicationLogsDashboard"
 
@@ -10,24 +10,13 @@ export const metadata = {
 }
 
 export default async function CommunicationsPage() {
-  const supabase = await createClient()
+  const { user, profile, role } = await getCurrentUserWithRole()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
 
-  // Consultar perfil para comprobar el rol en tiempo real
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
-  if (profile?.role !== "administrador") {
+  if (role !== "administrador") {
     redirect("/")
   }
 

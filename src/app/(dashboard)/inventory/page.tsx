@@ -1,6 +1,6 @@
 import React from "react"
 import { redirect } from "next/navigation"
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getInventoryProducts } from "@/domains/inventory/actions"
 import { getAllowedBranches, resolveActiveBranch } from "@/domains/branches/session"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
@@ -13,30 +13,19 @@ export const metadata = {
 }
 
 export default async function InventoryPage() {
-  const supabase = await createClient()
+  const { user, profile, role } = await getCurrentUserWithRole()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
 
-  // Consultar perfil para comprobar el rol en tiempo real
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
-
   // Solo administradores pueden ver el catálogo de inventario
-  if (profile?.role !== "administrador") {
+  if (role !== "administrador") {
     redirect("/")
   }
 
-  const allowedBranches = await getAllowedBranches(user.id, profile.role)
-  const resolvedBranch = await resolveActiveBranch(user.id, profile.role)
+  const allowedBranches = await getAllowedBranches(user.id, role || "")
+  const resolvedBranch = await resolveActiveBranch(user.id, role || "")
   const products = await getInventoryProducts()
 
   return (

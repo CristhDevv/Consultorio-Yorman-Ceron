@@ -93,7 +93,6 @@ const TOOTH_NAMES: Record<number, string> = {
 
 // ─── Anatomical tooth paths (SVG 0 0 44 54 viewBox) ──────────
 function ToothShape({ type, isUpper }: { type: ReturnType<typeof getToothType>; isUpper: boolean }) {
-  const base = isUpper ? 0 : 0
 
   if (type === "incisor") {
     // Rectangular with slightly rounded crown

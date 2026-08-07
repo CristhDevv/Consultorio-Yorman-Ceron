@@ -178,7 +178,7 @@ describe('AppointmentForm Component', () => {
         status: 'programada',
         reason: '',
         notes: '',
-        branch_id: null,
+        branch_id: '',
       });
     });
 

@@ -40,7 +40,7 @@ export default function PatientForm({
   const [medicalObservations, setMedicalObservations] = useState(initialData?.medical_observations || "")
   
   // Sucursal (Solo para creación)
-  const [branchId, setBranchId] = useState<string | null>(initialData?.branch_id || defaultBranchId || null)
+  const [branchId, setBranchId] = useState<string>(initialData?.branch_id || defaultBranchId || "")
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -167,8 +167,8 @@ export default function PatientForm({
                 <Label htmlFor="branchId" className="text-foreground font-medium">Sucursal</Label>
                 <select
                   id="branchId"
-                  value={branchId || ""}
-                  onChange={(e) => setBranchId(e.target.value || null)}
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
                   className="w-full bg-white border border-border text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer font-medium"
                 >
                   <option value="">Sin sucursal asignada</option>

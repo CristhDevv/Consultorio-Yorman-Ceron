@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition, useRef } from "react"
-import { createInventoryProduct, type ProductInput, type InventoryProduct } from "@/domains/inventory/actions"
+import { createInventoryProduct, type InventoryProduct } from "@/domains/inventory/actions"
 
 interface AllowedBranch {
   id: string
@@ -32,7 +32,7 @@ export default function ProductForm({ allowedBranches, defaultBranchId }: Produc
     const unit = (formData.get("unit") as string).trim()
     const minStockRaw = formData.get("minStock") as string
     const currentStockRaw = formData.get("currentStock") as string
-    const branchId = formData.get("branchId") as string || null
+    const branchId = (formData.get("branchId") as string) ?? ""
 
     const minStock = parseInt(minStockRaw, 10)
     const currentStock = parseInt(currentStockRaw, 10)

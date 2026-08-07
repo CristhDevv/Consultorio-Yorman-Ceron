@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { randomUUID } from "crypto"
 import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
+import { resolveActiveBranch } from "@/domains/branches/session"
 import type { ImagingType, DeletedPatientImageRow, PatientImageWithUrl } from "./types"
 
 // ─── Blocklist de extensiones y mimetypes peligrosos ───────────────────────
@@ -52,14 +54,16 @@ export async function uploadPatientImage(
 ): Promise<ActionResult<{ id: string; file_path: string }>> {
   const supabase = await createClient()
 
-  // — Validar sesión ────────────────────────────────────────────────────────
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  // — Validar sesión y obtener sucursal activa ─────────────────────────────
+  const { user, role } = await getCurrentUserWithRole()
 
-  if (authError || !user) {
+  if (!user) {
     return { success: false, error: "No hay sesión activa. Por favor inicia sesión." }
+  }
+
+  const { activeBranchId } = await resolveActiveBranch(user.id, role ?? "")
+  if (!activeBranchId) {
+    return { success: false, error: "No tienes una sucursal activa asignada. Contacta al administrador." }
   }
 
   // — Extraer campos del FormData ───────────────────────────────────────────
@@ -136,6 +140,7 @@ export async function uploadPatientImage(
       file_name:    file.name,
       uploaded_by:  user.id,
       bucket_id:    BUCKET,
+      branch_id:    activeBranchId,
     })
     .select("id, file_path")
     .single()

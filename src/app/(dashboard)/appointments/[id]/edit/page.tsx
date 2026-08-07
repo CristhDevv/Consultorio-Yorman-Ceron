@@ -2,6 +2,7 @@ import React from "react"
 import Link from "next/link"
 import { getAppointmentById } from "@/domains/appointments/actions"
 import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getAllowedBranches } from "@/domains/branches/session"
 import AppointmentEditForm from "@/domains/appointments/components/AppointmentEditForm"
 import { Button } from "@/shared/components/ui/button"
@@ -73,19 +74,9 @@ export default async function EditAppointmentPage({ params }: PageProps) {
 
   // Caso 3: Cita editable — obtener odontólogos y sucursales permitidas
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, role } = await getCurrentUserWithRole()
 
-  let role = ""
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-    role = profile?.role || ""
-  }
-
-  const allowedBranches = user ? await getAllowedBranches(user.id, role) : []
+  const allowedBranches = user ? await getAllowedBranches(user.id, role ?? "") : []
 
   const { data: dentistsData } = await supabase
     .from("profiles")

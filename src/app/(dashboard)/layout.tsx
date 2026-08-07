@@ -1,36 +1,26 @@
-import { createClient } from "@/shared/lib/supabase/server"
 import { redirect } from "next/navigation"
 import DashboardClientLayout from "./DashboardClientLayout"
 import { resolveActiveBranch, getAllowedBranches } from "@/domains/branches/session"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
+  const { user, profile, role } = await getCurrentUserWithRole()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name")
-    .eq("id", user.id)
-    .single()
-
-  if (profile?.role === "paciente") {
+  if (role === "paciente") {
     redirect("/portal")
   }
 
-  const role = profile?.role ?? ""
-  const resolvedBranch = await resolveActiveBranch(user.id, role)
-  const allowedBranches = await getAllowedBranches(user.id, role)
+  const activeRole = role ?? ""
+  const resolvedBranch = await resolveActiveBranch(user.id, activeRole)
+  const allowedBranches = await getAllowedBranches(user.id, activeRole)
 
   return (
     <DashboardClientLayout

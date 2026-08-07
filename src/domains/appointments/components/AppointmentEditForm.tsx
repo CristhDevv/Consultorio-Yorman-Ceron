@@ -152,7 +152,7 @@ export default function AppointmentEditForm({
         duration_minutes: selectedSlot.duration_minutes,
         reason,
         notes,
-        branch_id: branchId || null,
+        branch_id: branchId,
       })
 
       if (res.success) {

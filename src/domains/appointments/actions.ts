@@ -18,7 +18,7 @@ export interface AppointmentInput {
   status: "programada" | "confirmada" | "completada" | "cancelada" | "no_asistio"
   reason: string
   notes: string
-  branch_id?: string | null
+  branch_id: string
 }
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ export async function createAppointment(input: AppointmentInput) {
       status: input.status,
       reason: input.reason || null,
       notes: input.notes || null,
-      branch_id: input.branch_id || null,
+      branch_id: input.branch_id,
       created_by: user.id,
     })
     .select("id")
@@ -276,7 +276,7 @@ export async function updateAppointment(id: string, input: Partial<AppointmentIn
       ...(input.status !== undefined && { status: input.status }),
       ...(input.reason !== undefined && { reason: input.reason || null }),
       ...(input.notes !== undefined && { notes: input.notes || null }),
-      ...(input.branch_id !== undefined && { branch_id: input.branch_id || null }),
+      ...(input.branch_id !== undefined && { branch_id: input.branch_id }),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

@@ -140,7 +140,7 @@ export default function AppointmentForm({ patients, dentists, allowedBranches, d
         status: "programada",
         reason,
         notes,
-        branch_id: branchId || null,
+        branch_id: branchId,
       })
 
       if (res.success) {

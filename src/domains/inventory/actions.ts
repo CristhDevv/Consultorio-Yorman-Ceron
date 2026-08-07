@@ -144,7 +144,7 @@ export type ProductInput = {
   unit: string
   minStock: number
   currentStock: number
-  branchId?: string | null
+  branchId: string
 }
 
 export async function createInventoryProduct(
@@ -199,7 +199,7 @@ export async function createInventoryProduct(
       min_stock: input.minStock,
       current_stock: input.currentStock,
       created_by: user.id,
-      branch_id: input.branchId || null,
+      branch_id: input.branchId,
     })
     .select()
     .single()

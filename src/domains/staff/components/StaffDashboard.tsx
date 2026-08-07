@@ -28,13 +28,6 @@ export default function StaffDashboard({ initialStaff }: StaffDashboardProps) {
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
 
-  const reloadStaff = async () => {
-    // Para simplificar, en lugar de recargar de forma asíncrona pesada,
-    // actualizamos el estado local cuando completamos una Server Action exitosa.
-    // Como las acciones llaman a revalidatePath("/staff"), Next.js actualizará
-    // las props del servidor en la página, pero actualizar el estado local
-    // nos da reactividad instantánea.
-  }
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr"
+import { SupabaseClient } from "@supabase/supabase-js"
 import { Database } from "@/shared/types/database.types"
 
 export function createClient() {
@@ -8,7 +9,7 @@ export function createClient() {
   if (!url || !key) {
     if (typeof window === "undefined") {
       // Prevents crash during next build static generation if env variables are not present
-      return {} as any
+      return {} as unknown as SupabaseClient<Database>
     }
   }
 

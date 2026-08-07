@@ -1,22 +1,12 @@
-import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { redirect } from "next/navigation"
 
 export default async function PortalPage() {
-  const supabase = await createClient()
+  const { user, profile } = await getCurrentUserWithRole()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!user || !profile) {
     redirect("/login")
   }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role")
-    .eq("id", user.id)
-    .single()
 
   return (
     <div className="min-h-screen bg-[#F7F9FA] text-foreground flex flex-col items-center justify-center p-6">
