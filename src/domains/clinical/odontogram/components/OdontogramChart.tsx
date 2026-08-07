@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
-import { AlertCircle, CheckCircle2, Info } from "lucide-react"
+import { AlertCircle, CheckCircle2, Info, Trash2 } from "lucide-react"
 
 export interface OdontogramRecord {
   id: string
@@ -22,25 +22,13 @@ interface OdontogramChartProps {
     status: string
     notes?: string
   }) => Promise<{ success: boolean; error?: string }>
+  onDeleteRecord?: (id: string) => Promise<{ success: boolean; error?: string }>
 }
 
 const QUADRANT_1 = [18, 17, 16, 15, 14, 13, 12, 11]
 const QUADRANT_2 = [21, 22, 23, 24, 25, 26, 27, 28]
 const QUADRANT_3 = [31, 32, 33, 34, 35, 36, 37, 38]
 const QUADRANT_4 = [48, 47, 46, 45, 44, 43, 42, 41]
-
-const STATUS_OPTIONS = [
-  { value: "sano",               label: "Sano",               color: "bg-emerald-50 text-emerald-700 border-emerald-300",  fill: "#10B981" },
-  { value: "caries",             label: "Caries",             color: "bg-red-50 text-red-700 border-red-300",              fill: "#EF4444" },
-  { value: "obturado",           label: "Obturado (Resina)",  color: "bg-sky-50 text-sky-700 border-sky-300",              fill: "#0EA5E9" },
-  { value: "sellante",           label: "Sellante",           color: "bg-violet-50 text-violet-700 border-violet-300",     fill: "#8B5CF6" },
-  { value: "corona",             label: "Corona",             color: "bg-amber-50 text-amber-700 border-amber-300",        fill: "#F59E0B" },
-  { value: "endodoncia",         label: "Endodoncia",         color: "bg-pink-50 text-pink-700 border-pink-300",           fill: "#EC4899" },
-  { value: "implante",           label: "Implante",           color: "bg-teal-50 text-teal-700 border-teal-300",           fill: "#14B8A6" },
-  { value: "ausente",            label: "Ausente",            color: "bg-slate-50 text-slate-600 border-slate-300",        fill: "#94A3B8" },
-  { value: "extraccion_indicada",label: "Extracción Indicada",color: "bg-rose-50 text-rose-700 border-rose-300",          fill: "#F43F5E" },
-  { value: "fracturado",         label: "Fracturado",         color: "bg-orange-50 text-orange-700 border-orange-300",     fill: "#F97316" },
-]
 
 // ─── Tooth type classification ────────────────────────────────
 function getToothType(n: number): "incisor" | "canine" | "premolar" | "molar" {
@@ -91,10 +79,16 @@ const TOOTH_NAMES: Record<number, string> = {
   48: "Tercer Molar Inferior Derecho (Muela del Juicio)",
 }
 
-// ─── Anatomical tooth paths (SVG 0 0 44 54 viewBox) ──────────
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function ToothShape({ type, isUpper, fill = "#F8FAFC" }: { type: ReturnType<typeof getToothType>; isUpper: boolean; fill?: string }) {
+// All valid tooth numbers in a flat list
+const ALL_TEETH_NUMBERS = [
+  ...QUADRANT_1,
+  ...QUADRANT_2,
+  ...QUADRANT_3,
+  ...QUADRANT_4
+].sort()
 
+// ─── Anatomical tooth paths (SVG 0 0 44 54 viewBox) ──────────
+function ToothShape({ type, fill = "#F8FAFC", stroke = "#94A3B8" }: { type: ReturnType<typeof getToothType>; isUpper: boolean; fill?: string; stroke?: string }) {
   if (type === "incisor") {
     // Rectangular with slightly rounded crown
     return (
@@ -102,7 +96,7 @@ function ToothShape({ type, isUpper, fill = "#F8FAFC" }: { type: ReturnType<type
         {/* Root */}
         <path d="M17 30 Q16 48 22 54 Q28 48 27 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
         {/* Crown */}
-        <rect x="10" y="8" width="24" height="22" rx="4" fill={fill} stroke="#94A3B8" strokeWidth="1" />
+        <rect x="10" y="8" width="24" height="22" rx="4" fill={fill} stroke={stroke} strokeWidth="1.2" />
       </g>
     )
   }
@@ -111,7 +105,7 @@ function ToothShape({ type, isUpper, fill = "#F8FAFC" }: { type: ReturnType<type
     return (
       <g>
         <path d="M17 30 Q15 50 22 54 Q29 50 27 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
-        <path d="M10 28 L22 6 L34 28 Q31 32 22 32 Q13 32 10 28 Z" fill={fill} stroke="#94A3B8" strokeWidth="1" />
+        <path d="M10 28 L22 6 L34 28 Q31 32 22 32 Q13 32 10 28 Z" fill={fill} stroke={stroke} strokeWidth="1.2" />
       </g>
     )
   }
@@ -120,7 +114,7 @@ function ToothShape({ type, isUpper, fill = "#F8FAFC" }: { type: ReturnType<type
     return (
       <g>
         <path d="M14 30 Q13 46 18 53 Q19 54 20 53 Q21 48 22 44 Q23 48 24 53 Q25 54 26 53 Q30 46 30 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
-        <rect x="9" y="9" width="26" height="21" rx="5" fill={fill} stroke="#94A3B8" strokeWidth="1" />
+        <rect x="9" y="9" width="26" height="21" rx="5" fill={fill} stroke={stroke} strokeWidth="1.2" />
         {/* Bicuspid line */}
         <line x1="22" y1="9" x2="22" y2="30" stroke="#CBD5E1" strokeWidth="0.6" />
       </g>
@@ -130,7 +124,7 @@ function ToothShape({ type, isUpper, fill = "#F8FAFC" }: { type: ReturnType<type
   return (
     <g>
       <path d="M9 30 Q8 46 14 53 Q15 54 16 53 Q17 47 22 44 Q27 47 28 53 Q29 54 30 53 Q36 46 35 30 Z" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="0.8" />
-      <rect x="6" y="8" width="32" height="22" rx="5" fill={fill} stroke="#94A3B8" strokeWidth="1" />
+      <rect x="6" y="8" width="32" height="22" rx="5" fill={fill} stroke={stroke} strokeWidth="1.2" />
       {/* Crown grooves */}
       <line x1="22" y1="8" x2="22" y2="30" stroke="#CBD5E1" strokeWidth="0.6" />
       <line x1="6" y1="19" x2="38" y2="19" stroke="#CBD5E1" strokeWidth="0.5" />
@@ -138,102 +132,40 @@ function ToothShape({ type, isUpper, fill = "#F8FAFC" }: { type: ReturnType<type
   )
 }
 
-export default function OdontogramChart({ records = [], onSelectionSubmit }: OdontogramChartProps) {
+export default function OdontogramChart({ records = [], onSelectionSubmit, onDeleteRecord }: OdontogramChartProps) {
   const router = useRouter()
-  const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
+  const [selectedTooth, setSelectedTooth] = useState<number>(11)
   const [selectedFace, setSelectedFace] = useState<string>("General")
-  const [selectedStatus, setSelectedStatus] = useState<string>("sano")
-  const [notes, setNotes] = useState<string>("")
+  const [selectedStatus, setSelectedStatus] = useState<string>("")
   const [submitting, setSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  const getStatusFill = (toothNumber: number, faceName: string): string => {
-    const record = records.find(r => r.tooth_number === toothNumber && r.tooth_face === faceName)
-    if (!record) return "transparent"
-    return STATUS_OPTIONS.find(s => s.value === record.status)?.fill ?? "#10B981"
-  }
-
-  const getToothStatuses = (toothNumber: number) =>
-    records.filter(r => r.tooth_number === toothNumber && r.tooth_face === null)
-
-  const handleToothClick = (toothNumber: number) => {
-    setSelectedTooth(toothNumber)
-    setErrorMsg(null)
-    setSuccessMsg(null)
-
-    // Buscar si hay registro de cara general (tooth_face === null)
-    const generalRecord = records.find(
-      r => r.tooth_number === toothNumber && r.tooth_face === null
-    )
-
-    if (generalRecord) {
-      setSelectedFace("General")
-      setSelectedStatus(generalRecord.status)
-      setNotes(generalRecord.notes || "")
-    } else {
-      // Buscar si hay registro de cara específica
-      const firstFaceRecord = records.find(
-        r => r.tooth_number === toothNumber && r.tooth_face !== null
-      )
-      if (firstFaceRecord) {
-        setSelectedFace(firstFaceRecord.tooth_face!)
-        setSelectedStatus(firstFaceRecord.status)
-        setNotes(firstFaceRecord.notes || "")
-      } else {
-        setSelectedFace("General")
-        setSelectedStatus("sano")
-        setNotes("")
-      }
-    }
-  }
-
-  const handleFaceChange = (newFace: string) => {
-    setSelectedFace(newFace)
-    if (!selectedTooth) return
-
-    if (newFace === "General") {
-      const generalRecord = records.find(
-        r => r.tooth_number === selectedTooth && r.tooth_face === null
-      )
-      setSelectedStatus(generalRecord ? generalRecord.status : "sano")
-      setNotes(generalRecord ? (generalRecord.notes || "") : "")
-    } else {
-      const faceRecord = records.find(
-        r => r.tooth_number === selectedTooth && r.tooth_face === newFace
-      )
-      setSelectedStatus(faceRecord ? faceRecord.status : "sano")
-      setNotes(faceRecord ? (faceRecord.notes || "") : "")
-    }
-  }
-
-  const handleStatusChange = (newStatus: string) => {
-    setSelectedStatus(newStatus)
-  }
-
   const handleConfirm = async () => {
-    if (!selectedTooth) return
+    if (!selectedStatus.trim()) {
+      setErrorMsg("Debe ingresar una observación o diagnóstico.")
+      return
+    }
+
     setSubmitting(true)
     setErrorMsg(null)
     setSuccessMsg(null)
 
-    const isGeneralFace = selectedFace === "General"
     const payload = {
       tooth_number: selectedTooth,
-      tooth_face: isGeneralFace ? null : selectedFace,
-      status: selectedStatus,
-      notes: notes.trim() || undefined,
+      tooth_face: selectedFace.trim() || null,
+      status: selectedStatus.trim(),
     }
 
     try {
       const res = await onSelectionSubmit(payload)
       if (res.success) {
-        setSuccessMsg("¡Registro guardado correctamente!")
-        setSelectedTooth(null)
-        setNotes("")
+        setSuccessMsg("¡Observación registrada correctamente!")
+        setSelectedStatus("")
         router.refresh()
       } else {
-        setErrorMsg(res.error || "Ocurrió un error al persistir el registro.")
+        setErrorMsg(res.error || "Ocurrió un error al guardar el registro.")
       }
     } catch {
       setErrorMsg("Ocurrió un error inesperado al procesar la solicitud.")
@@ -242,35 +174,48 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
     }
   }
 
+  const handleDelete = async (recordId: string) => {
+    if (!onDeleteRecord) return
+    if (!window.confirm("¿Está seguro de que desea eliminar esta observación del historial?")) return
+
+    setDeletingId(recordId)
+    setErrorMsg(null)
+    setSuccessMsg(null)
+
+    try {
+      const res = await onDeleteRecord(recordId)
+      if (res.success) {
+        setSuccessMsg("Registro eliminado correctamente.")
+        router.refresh()
+      } else {
+        setErrorMsg(res.error || "No se pudo eliminar el registro.")
+      }
+    } catch {
+      setErrorMsg("Error inesperado al intentar eliminar el registro.")
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const renderTooth = (toothNumber: number) => {
     const isSelected = selectedTooth === toothNumber
     const type = getToothType(toothNumber)
     const isUpper = toothNumber < 30
-    const generalStatuses = getToothStatuses(toothNumber)
-    const hasExtraccion = generalStatuses.some(g => g.status === "extraccion_indicada")
-    const hasAusente = generalStatuses.some(g => g.status === "ausente")
-    const hasCross = hasExtraccion || hasAusente
-    const crossColor = hasExtraccion ? "#F43F5E" : "#94A3B8"
 
-    // Overlay fill for general statuses (corona, implante, endodoncia etc)
-    let toothFill = "#F8FAFC"
-    let toothStroke = "#94A3B8"
-    const generalStatus = generalStatuses.find(g => ["corona","implante","endodoncia","sano"].includes(g.status))
-    if (generalStatus) {
-      const opt = STATUS_OPTIONS.find(o => o.value === generalStatus.status)
-      if (opt) { toothFill = opt.fill + "22"; toothStroke = opt.fill }
-    }
-
-    const isRightSide = (toothNumber >= 11 && toothNumber <= 18) || (toothNumber >= 41 && toothNumber <= 48)
-    const leftFace = isRightSide ? "Distal" : "Mesial"
-    const rightFace = isRightSide ? "Mesial" : "Distal"
-    const bottomFace = isUpper ? "Palatina" : "Lingual"
+    // Si tiene observaciones registradas, coloreamos la pieza en verde suave
+    const hasObservations = records.some(r => r.tooth_number === toothNumber)
+    const toothFill = isSelected ? "#CCFBF1" : (hasObservations ? "#F0FDF4" : "#F8FAFC")
+    const toothStroke = isSelected ? "#00C8B4" : (hasObservations ? "#15803D" : "#94A3B8")
 
     return (
       <div
         key={toothNumber}
-        onClick={() => handleToothClick(toothNumber)}
-        className="tooth-container flex flex-col items-center gap-0.5 p-1 rounded-lg select-none"
+        onClick={() => {
+          setSelectedTooth(toothNumber)
+          setErrorMsg(null)
+          setSuccessMsg(null)
+        }}
+        className="tooth-container flex flex-col items-center gap-0.5 p-1 rounded-lg select-none cursor-pointer hover:bg-slate-50 transition-colors"
         style={{
           background: isSelected ? "#E6FAF8" : "transparent",
           outline: isSelected ? "2px solid #00C8B4" : "2px solid transparent",
@@ -278,7 +223,7 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
         }}
       >
         {/* Tooth number */}
-        <span className="text-[9px] font-bold" style={{ color: isSelected ? "#00A896" : "#94A3B8" }}>
+        <span className="text-[10px] font-bold" style={{ color: isSelected ? "#00A896" : (hasObservations ? "#166534" : "#94A3B8") }}>
           {toothNumber}
         </span>
 
@@ -288,145 +233,84 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
           className="w-8 h-10"
           style={{ transform: isUpper ? "none" : "scaleY(-1)" }}
         >
-          {/* Faces overlaid as colored zones */}
-          {/* Oclusal face (center circle) */}
-          <circle cx="22" cy="19" r="7"
-            fill={getStatusFill(toothNumber, "Oclusal") || toothFill}
-            stroke={toothStroke}
-            strokeWidth="0.8"
-            opacity={getStatusFill(toothNumber, "Oclusal") !== "transparent" ? 0.9 : 0}
-          />
-          {/* Vestibular top strip */}
-          <rect x="9" y="8" width="26" height="7" rx="3"
-            fill={getStatusFill(toothNumber, "Vestibular")}
-            opacity={getStatusFill(toothNumber, "Vestibular") !== "transparent" ? 0.85 : 0}
-          />
-          {/* Palatina/Lingual bottom strip */}
-          <rect x="9" y="24" width="26" height="7" rx="3"
-            fill={getStatusFill(toothNumber, bottomFace)}
-            opacity={getStatusFill(toothNumber, bottomFace) !== "transparent" ? 0.85 : 0}
-          />
-          {/* Left face (Mesial/Distal) */}
-          <rect x="6" y="9" width="7" height="22" rx="3"
-            fill={getStatusFill(toothNumber, leftFace)}
-            opacity={getStatusFill(toothNumber, leftFace) !== "transparent" ? 0.85 : 0}
-          />
-          {/* Right face */}
-          <rect x="31" y="9" width="7" height="22" rx="3"
-            fill={getStatusFill(toothNumber, rightFace)}
-            opacity={getStatusFill(toothNumber, rightFace) !== "transparent" ? 0.85 : 0}
-          />
-
-          {/* Anatomic tooth shape */}
-          <ToothShape type={type} isUpper={isUpper} fill={toothFill} />
-
-          {/* Crown ring for corona/implante */}
-          {generalStatuses.some(g => g.status === "corona") && (
-            <rect x="7" y="7" width="30" height="24" rx="5" fill="none" stroke="#F59E0B" strokeWidth="2" />
-          )}
-          {generalStatuses.some(g => g.status === "implante") && (
-            <rect x="7" y="7" width="30" height="24" rx="5" fill="none" stroke="#14B8A6" strokeWidth="2" strokeDasharray="3,2" />
-          )}
-          {generalStatuses.some(g => g.status === "endodoncia") && (
-            <line x1="22" y1="30" x2="22" y2="52" stroke="#EC4899" strokeWidth="1.5" strokeLinecap="round" />
-          )}
-
-          {/* X cross for ausente / extraccion */}
-          {hasCross && (
-            <>
-              <line x1="10" y1="10" x2="34" y2="30" stroke={crossColor} strokeWidth="2.5" strokeLinecap="round" />
-              <line x1="34" y1="10" x2="10" y2="30" stroke={crossColor} strokeWidth="2.5" strokeLinecap="round" />
-            </>
-          )}
+          <ToothShape type={type} isUpper={isUpper} fill={toothFill} stroke={toothStroke} />
         </svg>
 
-        {/* Note indicator dot */}
-        {records.some(r => r.tooth_number === toothNumber && r.notes) && (
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#00C8B4" }} />
+        {/* Indicators */}
+        {hasObservations && (
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-0.5" title="Tiene observaciones clínicas" />
         )}
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col xl:flex-row gap-5 w-full">
-      {/* Odontogram panel */}
-      <div className="flex-1 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-[#1E293B]">Odontograma Clínico</h2>
-          <span className="text-xs font-medium text-[#64748B] bg-[#F1F5F9] px-3 py-1 rounded-full">
-            Haz clic en un diente para registrar diagnóstico
-          </span>
-        </div>
-
-        {successMsg && (
-          <div className="mb-4 flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>{successMsg}</span>
+    <div className="flex flex-col gap-8 w-full">
+      
+      {/* Sección Superior: Odontograma y Panel de Edición Libre */}
+      <div className="flex flex-col xl:flex-row gap-6 w-full items-start">
+        
+        {/* Odontograma Clínico */}
+        <div className="flex-1 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm w-full">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-[#1E293B]">Odontograma de Referencia</h2>
+            <span className="text-xs font-medium text-[#64748B] bg-[#F1F5F9] px-3 py-1 rounded-full">
+              Selecciona una pieza en el gráfico o búscala en la lista
+            </span>
           </div>
-        )}
 
-        {/* Upper jaw */}
-        <div className="mb-6">
-          <div className="grid grid-cols-2 gap-4 pb-3 border-b border-[#E2E8F0] mb-4">
-            <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider text-right">Cuadrante I — Superior Derecho</p>
-            <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Cuadrante II — Superior Izquierdo</p>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex justify-end gap-0.5 md:gap-1 flex-wrap">
-              {QUADRANT_1.map(n => renderTooth(n))}
+          {successMsg && (
+            <div className="mb-4 flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>{successMsg}</span>
             </div>
-            <div className="flex justify-start gap-0.5 md:gap-1 flex-wrap">
-              {QUADRANT_2.map(n => renderTooth(n))}
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Jaw divider */}
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-[#E2E8F0]" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Línea Oclusal</span>
-          <div className="flex-1 h-px bg-[#E2E8F0]" />
-        </div>
-
-        {/* Lower jaw */}
-        <div>
-          <div className="grid grid-cols-2 gap-4 pb-3 border-b border-[#E2E8F0] mb-4">
-            <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider text-right">Cuadrante IV — Inferior Derecho</p>
-            <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Cuadrante III — Inferior Izquierdo</p>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex justify-end gap-0.5 md:gap-1 flex-wrap">
-              {QUADRANT_4.map(n => renderTooth(n))}
+          {/* Upper jaw */}
+          <div className="mb-6">
+            <div className="grid grid-cols-2 gap-4 pb-3 border-b border-[#E2E8F0] mb-4">
+              <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider text-right">Cuadrante I — Superior Derecho</p>
+              <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Cuadrante II — Superior Izquierdo</p>
             </div>
-            <div className="flex justify-start gap-0.5 md:gap-1 flex-wrap">
-              {QUADRANT_3.map(n => renderTooth(n))}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex justify-end gap-0.5 md:gap-1 flex-wrap">
+                {QUADRANT_1.map(n => renderTooth(n))}
+              </div>
+              <div className="flex justify-start gap-0.5 md:gap-1 flex-wrap">
+                {QUADRANT_2.map(n => renderTooth(n))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Legend */}
-        <div className="mt-8 pt-5 border-t border-[#E2E8F0]">
-          <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-3">Leyenda de diagnósticos</p>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map(opt => (
-              <span
-                key={opt.value}
-                className={`text-xs px-2.5 py-1 rounded-full border font-medium ${opt.color}`}
-              >
-                {opt.label}
-              </span>
-            ))}
+          {/* Jaw divider */}
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-[#E2E8F0]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Línea Oclusal</span>
+            <div className="flex-1 h-px bg-[#E2E8F0]" />
+          </div>
+
+          {/* Lower jaw */}
+          <div>
+            <div className="grid grid-cols-2 gap-4 pb-3 border-b border-[#E2E8F0] mb-4">
+              <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider text-right">Cuadrante IV — Inferior Derecho</p>
+              <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Cuadrante III — Inferior Izquierdo</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex justify-end gap-0.5 md:gap-1 flex-wrap">
+                {QUADRANT_4.map(n => renderTooth(n))}
+              </div>
+              <div className="flex justify-start gap-0.5 md:gap-1 flex-wrap">
+                {QUADRANT_3.map(n => renderTooth(n))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Selection panel */}
-      <div className="w-full xl:w-76 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm flex flex-col">
-        {selectedTooth ? (
+        {/* Panel de Observación Libre */}
+        <div className="w-full xl:w-80 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm flex flex-col shrink-0">
           <div className="flex flex-col gap-5">
             <div>
-              <div className="inline-flex items-center gap-2 mb-3">
+              <div className="inline-flex items-center gap-2 mb-2">
                 <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white"
                   style={{ background: "linear-gradient(135deg, #00C8B4, #00A896)" }}>
                   {selectedTooth}
@@ -435,8 +319,8 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
                   {TOOTH_NAMES[selectedTooth] ?? `Pieza #${selectedTooth}`}
                 </h3>
               </div>
-              <p className="text-xs font-medium text-[#64748B]">
-                Diente #{selectedTooth} — Registra un diagnóstico clínico o tratamiento.
+              <p className="text-xs text-muted-foreground">
+                Escribe libremente observaciones o diagnósticos clínicos para esta pieza.
               </p>
             </div>
 
@@ -447,142 +331,123 @@ export default function OdontogramChart({ records = [], onSelectionSubmit }: Odo
               </div>
             )}
 
+            {/* Diente Selector Dropdown */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-[#475569]">Pieza Dental *</label>
+              <select
+                value={selectedTooth}
+                onChange={e => {
+                  setSelectedTooth(Number(e.target.value))
+                  setErrorMsg(null)
+                  setSuccessMsg(null)
+                }}
+                className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all cursor-pointer"
+              >
+                {ALL_TEETH_NUMBERS.map(n => (
+                  <option key={n} value={n}>Pieza #{n} - {TOOTH_NAMES[n]?.split(" ")[0]} ({n < 30 ? "Sup" : "Inf"})</option>
+                ))}
+              </select>
+            </div>
+
             {/* Cara Dental */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#475569]">Cara Dental *</label>
-              <select
+              <label htmlFor="cara-dental" className="text-xs font-semibold text-[#475569]">Cara Dental (Opcional / Libre)</label>
+              <input
+                id="cara-dental"
+                type="text"
                 value={selectedFace}
-                onChange={e => handleFaceChange(e.target.value)}
-                className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all cursor-pointer"
-              >
-                <option value="General">Toda la pieza (General)</option>
-                <option value="Oclusal">Oclusal (Centro)</option>
-                <option value="Mesial">Mesial</option>
-                <option value="Distal">Distal</option>
-                <option value="Vestibular">Vestibular</option>
-                {selectedTooth && selectedTooth < 30 ? (
-                  <option value="Palatina">Palatina</option>
-                ) : (
-                  <option value="Lingual">Lingual</option>
-                )}
-              </select>
+                onChange={e => setSelectedFace(e.target.value)}
+                placeholder="ej: Vestibular, Oclusal, General..."
+                className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all"
+              />
             </div>
 
-            {/* Diagnóstico / Estado */}
+            {/* Diagnóstico / Observación */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#475569]">Diagnóstico / Estado *</label>
-              <select
-                value={selectedStatus}
-                onChange={e => handleStatusChange(e.target.value)}
-                className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all cursor-pointer"
-              >
-                {selectedFace === "General" ? (
-                  // Estados Generales
-                  STATUS_OPTIONS.filter(opt => ["sano", "ausente", "extraccion_indicada", "endodoncia", "corona", "implante"].includes(opt.value)).map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))
-                ) : (
-                  // Estados por Cara
-                  STATUS_OPTIONS.filter(opt => ["sano", "caries", "obturado", "sellante", "fracturado"].includes(opt.value)).map(opt => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.value === "sano" ? "Sano / Limpiar diagnóstico" : opt.label}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-[#475569]">Notas clínicas</label>
+              <label htmlFor="observacion-diagnostico" className="text-xs font-semibold text-[#475569]">Observación / Diagnóstico *</label>
               <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Notas clínicas adicionales para el expediente..."
-                rows={3}
+                id="observacion-diagnostico"
+                value={selectedStatus}
+                onChange={e => setSelectedStatus(e.target.value)}
+                placeholder="ej: Caries dentinaria activa, corona en buen estado, etc..."
+                rows={4}
                 className="w-full border border-[#E2E8F0] text-[#1E293B] bg-white rounded-lg p-2.5 text-sm outline-none focus:border-[#00C8B4] focus:ring-2 focus:ring-[#00C8B4]/20 transition-all resize-none"
               />
             </div>
 
-            <div className="flex flex-col gap-2 mt-1">
-              <button
-                onClick={handleConfirm}
-                disabled={submitting}
-                className="w-full text-white py-2.5 px-4 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50"
-                style={{ background: submitting ? "#94A3B8" : "linear-gradient(135deg, #00C8B4, #00A896)" }}
-              >
-                {submitting ? "Guardando..." : "Confirmar y Guardar"}
-              </button>
-              <button
-                onClick={() => setSelectedTooth(null)}
-                disabled={submitting}
-                className="w-full bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] py-2.5 px-4 rounded-xl text-sm font-medium transition-all"
-              >
-                Cancelar
-              </button>
-            </div>
+            <button
+              onClick={handleConfirm}
+              disabled={submitting}
+              className="w-full text-white py-2.5 px-4 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50 mt-2"
+              style={{ background: submitting ? "#94A3B8" : "linear-gradient(135deg, #00C8B4, #00A896)" }}
+            >
+              {submitting ? "Guardando..." : "Guardar Observación"}
+            </button>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center h-full gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] flex items-center justify-center">
-              <Info className="w-6 h-6 text-[#94A3B8]" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-[#475569]">Ninguna pieza seleccionada</h3>
-              <p className="text-xs text-[#94A3B8] max-w-xs mt-1.5 leading-relaxed">
-                Haz clic en cualquier diente del odontograma para registrar un diagnóstico clínico.
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
+
       </div>
 
-      {/* Historial Clínico de Cambios */}
-      {records.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-[#E2E8F0] w-full">
-          <h4 className="text-sm font-bold text-[#1E293B] mb-3">Historial Clínico de Odontograma</h4>
-          <div className="overflow-x-auto border border-[#E2E8F0] rounded-xl shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse">
+      {/* Sección Inferior: Historial Clínico a Ancho Completo (Full Width) */}
+      <div className="w-full border-t border-[#E2E8F0] pt-6">
+        <h3 className="text-lg font-bold text-[#1E293B] mb-4">Historial de Observaciones Clínicas</h3>
+        {records.length === 0 ? (
+          <div className="bg-[#F8FAFC] border border-dashed border-[#E2E8F0] rounded-xl p-8 text-center text-muted-foreground text-sm">
+            No hay observaciones registradas en el odontograma del paciente.
+          </div>
+        ) : (
+          <div className="overflow-x-auto border border-[#E2E8F0] rounded-xl shadow-xs">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Fecha</th>
-                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Diente</th>
-                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Cara</th>
-                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Diagnóstico/Estado</th>
-                  <th className="px-4 py-2.5 font-bold text-[#64748B]">Notas</th>
+                  <th className="px-4 py-3 font-bold text-[#64748B]">Fecha</th>
+                  <th className="px-4 py-3 font-bold text-[#64748B]">Pieza Dental</th>
+                  <th className="px-4 py-3 font-bold text-[#64748B]">Cara</th>
+                  <th className="px-4 py-3 font-bold text-[#64748B]">Observación / Diagnóstico</th>
+                  {onDeleteRecord && <th className="px-4 py-3 font-bold text-[#64748B] text-right">Acciones</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2E8F0]">
                 {records.map((r) => {
                   const dateStr = new Date(r.created_at).toLocaleDateString("es-CO", {
                     day: "2-digit",
-                    month: "short",
+                    month: "long",
                     year: "numeric",
                   })
                   const toothName = TOOTH_NAMES[r.tooth_number] || `Diente #${r.tooth_number}`
-                  const statusOpt = STATUS_OPTIONS.find((s) => s.value === r.status)
                   return (
                     <tr key={r.id} className="hover:bg-[#F8FAFC]/50 transition-colors">
-                      <td className="px-4 py-2.5 font-medium text-[#64748B]">{dateStr}</td>
-                      <td className="px-4 py-2.5 font-bold text-[#1E293B]">{toothName}</td>
-                      <td className="px-4 py-2.5 font-medium text-[#475569]">
-                        {r.tooth_face === null ? "Toda la pieza" : r.tooth_face}
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{dateStr}</td>
+                      <td className="px-4 py-3 font-semibold text-[#1E293B]">
+                        Pieza {r.tooth_number} <span className="text-xs text-muted-foreground font-normal">({toothName})</span>
                       </td>
-                      <td className="px-4 py-2.5">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusOpt?.color || ""}`}>
-                          {statusOpt?.label || r.status}
-                        </span>
+                      <td className="px-4 py-3 text-slate-700">
+                        {r.tooth_face || <span className="text-muted-foreground/60 italic">—</span>}
                       </td>
-                      <td className="px-4 py-2.5 text-[#64748B] italic max-w-[200px] truncate" title={r.notes || ""}>
-                        {r.notes || "—"}
+                      <td className="px-4 py-3 text-slate-900 font-medium max-w-lg break-words">
+                        {r.status}
                       </td>
+                      {onDeleteRecord && (
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => handleDelete(r.id)}
+                            disabled={deletingId === r.id}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors inline-flex items-center disabled:opacity-50"
+                            title="Eliminar observación"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
     </div>
   )
 }

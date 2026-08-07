@@ -2,7 +2,7 @@ import React from "react"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getPatientById } from "@/domains/patients/actions"
 import PatientDetailCard from "@/domains/patients/components/PatientDetailCard"
-import { getOdontogramByPatient, createOdontogramRecord } from "@/domains/clinical/odontogram/actions"
+import { getOdontogramByPatient, createOdontogramRecord, deleteOdontogramRecord } from "@/domains/clinical/odontogram/actions"
 import OdontogramChart, { type OdontogramRecord } from "@/domains/clinical/odontogram/components/OdontogramChart"
 import {
   getPatientDocuments,
@@ -124,6 +124,11 @@ export default async function PatientDetailPage({ params }: PageProps) {
     return { success: false, error: result.error }
   }
 
+  async function handleDeleteOdontogramRecord(recordId: string) {
+    "use server"
+    return deleteOdontogramRecord(recordId, id)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -138,6 +143,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
       <OdontogramChart
         records={records}
         onSelectionSubmit={handleOdontogramSubmit}
+        onDeleteRecord={handleDeleteOdontogramRecord}
       />
 
       <PatientDocuments

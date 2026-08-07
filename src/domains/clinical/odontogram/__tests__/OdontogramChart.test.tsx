@@ -10,101 +10,108 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+// Mock window.confirm
+const confirmSpy = vi.spyOn(window, 'confirm');
+
 describe('OdontogramChart Component', () => {
   const mockOnSelectionSubmit = vi.fn();
+  const mockOnDeleteRecord = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    confirmSpy.mockImplementation(() => true);
   });
 
-  it('1. should show tooth panel with tooth number and initial empty state when a tooth is clicked', () => {
+  it('1. should show default tooth 11 panel with correct anatomical name', () => {
     render(<OdontogramChart onSelectionSubmit={mockOnSelectionSubmit} />);
 
-    // Initially shows placeholder
-    expect(screen.getByText(/Ninguna pieza seleccionada/i)).toBeInTheDocument();
-
-    // Click tooth 11
-    fireEvent.click(screen.getByText('11'));
-
-    // Panel shows with the exact anatomical tooth name (tooth 11 = Incisivo Central Superior Derecho)
+    // Default selected tooth is 11
     expect(screen.getByRole('heading', { name: /Incisivo Central Superior Derecho/i })).toBeInTheDocument();
-    expect(screen.getByText(/Diente #11/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Ninguna pieza seleccionada/i)).not.toBeInTheDocument();
-
-    // Default status is 'sano' and notes textarea is empty
-    expect(screen.getByDisplayValue('Sano')).toBeInTheDocument();
-    const notesTextarea = screen.getByPlaceholderText(/Notas clínicas adicionales/i);
-    expect(notesTextarea).toHaveValue('');
   });
 
-  it('2. allows changing face and dynamic filtering of status options', () => {
+  it('2. allows clicking a tooth to change the selected tooth', () => {
     render(<OdontogramChart onSelectionSubmit={mockOnSelectionSubmit} />);
 
-    fireEvent.click(screen.getByText('11'));
+    // Click tooth 21
+    fireEvent.click(screen.getByText('21'));
 
-    // Both comboboxes are always visible in the new design
-    const comboboxes = screen.getAllByRole('combobox');
-    expect(comboboxes).toHaveLength(2);
-
-    // Default face is General, default status is Sano
-    expect(screen.getByDisplayValue('Toda la pieza (General)')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Sano')).toBeInTheDocument();
-
-    // Changing face to Oclusal
-    fireEvent.change(comboboxes[0], { target: { value: 'Oclusal' } });
-
-    // Face selector reflects Oclusal, and status dropdown adapts (defaults to Sano)
-    expect(screen.getByDisplayValue('Oclusal (Centro)')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Sano / Limpiar diagnóstico')).toBeInTheDocument();
+    // Heading updates to Incisivo Central Superior Izquierdo
+    expect(screen.getByRole('heading', { name: /Incisivo Central Superior Izquierdo/i })).toBeInTheDocument();
   });
 
-  it('3. successful confirm calls onSelectionSubmit with correct payload (tooth_face null for general), shows success message and closes panel', async () => {
+  it('3. successful save calls onSelectionSubmit with correct payload', async () => {
     mockOnSelectionSubmit.mockResolvedValue({ success: true });
 
     render(<OdontogramChart onSelectionSubmit={mockOnSelectionSubmit} />);
 
-    // Click tooth 21, keep default status 'sano' (general → tooth_face: null)
-    fireEvent.click(screen.getByText('21'));
+    // Fill face and observation
+    fireEvent.change(screen.getByLabelText(/Cara Dental/i), { target: { value: 'Mesial' } });
+    fireEvent.change(screen.getByLabelText(/Observación \/ Diagnóstico/i), { target: { value: 'Caries activa' } });
 
-    fireEvent.click(screen.getByRole('button', { name: /Confirmar y Guardar/i }));
+    // Submit
+    fireEvent.click(screen.getByRole('button', { name: /Guardar Observación/i }));
 
     await waitFor(() => {
       expect(mockOnSelectionSubmit).toHaveBeenCalledWith({
-        tooth_number: 21,
-        tooth_face: null,
-        status: 'sano',
-        notes: undefined,
+        tooth_number: 11,
+        tooth_face: 'Mesial',
+        status: 'Caries activa',
       });
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/¡Registro guardado correctamente!/i)).toBeInTheDocument();
+      expect(screen.getByText(/¡Observación registrada correctamente!/i)).toBeInTheDocument();
     });
-
-    // Panel closes — tooth deselected; the anatomical name heading should be gone
-    expect(screen.queryByRole('heading', { name: /Incisivo Central Superior Izquierdo/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/Ninguna pieza seleccionada/i)).toBeInTheDocument();
   });
 
-  it('4. failed confirm shows the returned error message and keeps the tooth selected', async () => {
+  it('4. failed save shows the returned error message', async () => {
     mockOnSelectionSubmit.mockResolvedValue({
       success: false,
-      error: 'Error de prueba al guardar el registro.',
+      error: 'Error de prueba al guardar.',
     });
 
     render(<OdontogramChart onSelectionSubmit={mockOnSelectionSubmit} />);
 
-    fireEvent.click(screen.getByText('11'));
-
-    fireEvent.click(screen.getByRole('button', { name: /Confirmar y Guardar/i }));
+    fireEvent.change(screen.getByLabelText(/Observación \/ Diagnóstico/i), { target: { value: 'Caries activa' } });
+    fireEvent.click(screen.getByRole('button', { name: /Guardar Observación/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Error de prueba al guardar el registro\./i)).toBeInTheDocument();
+      expect(screen.getByText(/Error de prueba al guardar\./i)).toBeInTheDocument();
     });
+  });
 
-    // Tooth remains selected — panel still visible with anatomical name
-    expect(screen.getByRole('heading', { name: /Incisivo Central Superior Derecho/i })).toBeInTheDocument();
-    expect(screen.getByText(/Diente #11/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Ninguna pieza seleccionada/i)).not.toBeInTheDocument();
+  it('5. renders observations list and calls onDeleteRecord when clicking delete', async () => {
+    mockOnDeleteRecord.mockResolvedValue({ success: true });
+    const mockRecords = [
+      {
+        id: 'rec-1',
+        patient_id: 'patient-123',
+        tooth_number: 11,
+        tooth_face: 'Mesial',
+        status: 'Caries dentinaria',
+        notes: null,
+        created_at: new Date().toISOString(),
+      },
+    ];
+
+    render(
+      <OdontogramChart
+        records={mockRecords}
+        onSelectionSubmit={mockOnSelectionSubmit}
+        onDeleteRecord={mockOnDeleteRecord}
+      />
+    );
+
+    // Checks that history displays observations
+    expect(screen.getByText('Caries dentinaria')).toBeInTheDocument();
+
+    // Click delete
+    const deleteButton = screen.getByTitle('Eliminar observación');
+    fireEvent.click(deleteButton);
+
+    expect(confirmSpy).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockOnDeleteRecord).toHaveBeenCalledWith('rec-1');
+    });
   });
 });

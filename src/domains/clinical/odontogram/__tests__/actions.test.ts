@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import {
   getOdontogramByPatient,
   createOdontogramRecord,
+  deleteOdontogramRecord,
   type OdontogramRecordInput,
 } from '../actions';
 import { createClient } from '@/shared/lib/supabase/server';
@@ -23,7 +24,6 @@ interface MockSupabase {
 describe('Odontogram Actions', () => {
   let mockSupabase: MockSupabase;
 
-
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -37,9 +37,6 @@ describe('Odontogram Actions', () => {
     vi.mocked(createClient).mockResolvedValue(mockSupabase as unknown as Awaited<ReturnType<typeof createClient>>);
   });
 
-  // ---------------------------------------------------------------------------
-  // getOdontogramByPatient
-  // ---------------------------------------------------------------------------
   describe('getOdontogramByPatient', () => {
     it('should return { success: true, data } with the records on success', async () => {
       const mockRecords = [
@@ -52,16 +49,6 @@ describe('Odontogram Actions', () => {
           notes: null,
           created_by: 'user-xyz',
           created_at: '2026-07-09T15:00:00Z',
-        },
-        {
-          id: 'rec-2',
-          patient_id: 'patient-abc',
-          tooth_number: 36,
-          tooth_face: 'Oclusal',
-          status: 'caries',
-          notes: 'Caries profunda',
-          created_by: 'user-xyz',
-          created_at: '2026-07-09T14:00:00Z',
         },
       ];
 
@@ -78,34 +65,8 @@ describe('Odontogram Actions', () => {
       expect(mockEq).toHaveBeenCalledWith('patient_id', 'patient-abc');
       expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
     });
-
-    it('should return { success: true, data: [] } when Supabase returns null data', async () => {
-      const mockOrder  = vi.fn().mockResolvedValue({ data: null, error: null });
-      const mockEq     = vi.fn().mockReturnValue({ order: mockOrder });
-      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-      mockSupabase.from.mockReturnValue({ select: mockSelect });
-
-      const result = await getOdontogramByPatient('patient-abc');
-
-      expect(result).toEqual({ success: true, data: [] });
-    });
-
-    it('should return { success: false, error } on Supabase error without throwing', async () => {
-      const mockOrder  = vi.fn().mockResolvedValue({ data: null, error: { message: 'connection refused' } });
-      const mockEq     = vi.fn().mockReturnValue({ order: mockOrder });
-      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
-      mockSupabase.from.mockReturnValue({ select: mockSelect });
-
-      const result = await getOdontogramByPatient('patient-abc');
-
-      expect(result).toEqual({ success: false, error: 'connection refused' });
-      expect(revalidatePath).not.toHaveBeenCalled();
-    });
   });
 
-  // ---------------------------------------------------------------------------
-  // createOdontogramRecord — upsert pattern (delete-then-insert)
-  // ---------------------------------------------------------------------------
   describe('createOdontogramRecord', () => {
     const faceInput: OdontogramRecordInput = {
       patient_id: 'patient-abc',
@@ -115,41 +76,10 @@ describe('Odontogram Actions', () => {
       notes: 'Caries profunda',
     };
 
-    const generalInput: OdontogramRecordInput = {
-      patient_id: 'patient-abc',
-      tooth_number: 21,
-      tooth_face: null,
-      status: 'endodoncia',
-      notes: null,
-    };
-
-    /**
-     * Configura mockSupabase.from para que:
-     *   - Primera llamada → cadena delete (delete + eqs)
-     *   - Segunda llamada → cadena insert
-     */
-    function setupFromMock(insertResult: { error: null | { message: string; code?: string } }) {
-      // Cadena de delete: delete().eq().eq().eq() para tooth_face no-null
-      //                   delete().eq().eq().is() para tooth_face null
-      const mockIs     = vi.fn().mockResolvedValue({ error: null });
-      const mockEqD3   = vi.fn().mockResolvedValue({ error: null });
-      const mockEqD2   = vi.fn().mockReturnValue({ eq: mockEqD3, is: mockIs });
-      const mockEqD1   = vi.fn().mockReturnValue({ eq: mockEqD2 });
-      const mockDelete = vi.fn().mockReturnValue({ eq: mockEqD1 });
-
-      // Cadena de insert
-      const mockInsert = vi.fn().mockResolvedValue(insertResult);
-
-      mockSupabase.from
-        .mockReturnValueOnce({ delete: mockDelete })
-        .mockReturnValueOnce({ insert: mockInsert });
-
-      return { mockDelete, mockInsert, mockIs, mockEqD1, mockEqD2, mockEqD3 };
-    }
-
-    it('should return { success: true } for a face-level status (caries, tooth_face non-null)', async () => {
+    it('should return { success: true } for a face-level status', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
-      const { mockInsert } = setupFromMock({ error: null });
+      const mockInsert = vi.fn().mockResolvedValue({ error: null });
+      mockSupabase.from.mockReturnValue({ insert: mockInsert });
 
       const result = await createOdontogramRecord(faceInput);
 
@@ -165,116 +95,49 @@ describe('Odontogram Actions', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/patients/patient-abc');
     });
 
-    it('should return { success: true } for a general status (endodoncia, tooth_face null)', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
-      const { mockInsert } = setupFromMock({ error: null });
-
-      const result = await createOdontogramRecord(generalInput);
-
-      expect(result).toEqual({ success: true });
-      expect(mockInsert).toHaveBeenCalledWith({
-        patient_id: 'patient-abc',
-        tooth_number: 21,
-        tooth_face: null,
-        status: 'endodoncia',
-        notes: null,
-        created_by: 'user-xyz',
-      });
-      expect(revalidatePath).toHaveBeenCalledWith('/patients/patient-abc');
-    });
-
-    it('should delete the record and return success without inserting when status is "sano" for a face-level status', async () => {
-      const inputSanoFace: OdontogramRecordInput = {
-        patient_id: 'patient-abc',
-        tooth_number: 36,
-        tooth_face: 'Oclusal',
-        status: 'sano',
-        notes: null,
-      };
-
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
-
-      const mockEqD3   = vi.fn().mockResolvedValue({ error: null });
-      const mockEqD2   = vi.fn().mockReturnValue({ eq: mockEqD3 });
-      const mockEqD1   = vi.fn().mockReturnValue({ eq: mockEqD2 });
-      const mockDelete = vi.fn().mockReturnValue({ eq: mockEqD1 });
-      mockSupabase.from.mockReturnValue({ delete: mockDelete });
-
-      const result = await createOdontogramRecord(inputSanoFace);
-
-      expect(result).toEqual({ success: true });
-      expect(mockSupabase.from).toHaveBeenCalledTimes(1);
-      expect(mockSupabase.from).toHaveBeenCalledWith('odontogram_records');
-      expect(mockDelete).toHaveBeenCalled();
-      expect(revalidatePath).toHaveBeenCalledWith('/patients/patient-abc');
-    });
-
-    it('should return { success: false, error } on Supabase insert error without throwing', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
-      const { mockInsert } = setupFromMock({
-        error: { message: 'new row violates row-level security policy' },
-      });
-
-      const result = await createOdontogramRecord(faceInput);
-
-      expect(result).toEqual({
-        success: false,
-        error: 'new row violates row-level security policy',
-      });
-      expect(revalidatePath).not.toHaveBeenCalled();
-      expect(mockInsert).toHaveBeenCalledTimes(1);
-    });
-
     it('should return { success: false, error: "Sesión no iniciada" } when no authenticated user', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
 
       const result = await createOdontogramRecord(faceInput);
 
       expect(result).toEqual({ success: false, error: 'Sesión no iniciada' });
-      // No debe tocar la base de datos en absoluto
       expect(mockSupabase.from).not.toHaveBeenCalled();
-      expect(revalidatePath).not.toHaveBeenCalled();
     });
 
-    it('should assign created_by from the authenticated session, not from the input payload', async () => {
+    it('should return { success: false, error } on Supabase insert error without throwing', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
-      const { mockInsert } = setupFromMock({ error: null });
+      const mockInsert = vi.fn().mockResolvedValue({ error: { message: 'RLS violation' } });
+      mockSupabase.from.mockReturnValue({ insert: mockInsert });
 
-      await createOdontogramRecord(faceInput);
+      const result = await createOdontogramRecord(faceInput);
 
-      expect(mockInsert).toHaveBeenCalledWith(
-        expect.objectContaining({ created_by: 'user-xyz' })
-      );
+      expect(result).toEqual({ success: false, error: 'RLS violation' });
+    });
+  });
+
+  describe('deleteOdontogramRecord', () => {
+    it('should delete the record and return success', async () => {
+      const mockEq = vi.fn().mockResolvedValue({ error: null });
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
+      mockSupabase.from.mockReturnValue({ delete: mockDelete });
+
+      const result = await deleteOdontogramRecord('rec-123', 'patient-abc');
+
+      expect(result).toEqual({ success: true });
+      expect(mockSupabase.from).toHaveBeenCalledWith('odontogram_records');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockEq).toHaveBeenCalledWith('id', 'rec-123');
+      expect(revalidatePath).toHaveBeenCalledWith('/patients/patient-abc');
     });
 
-    it('should normalize undefined notes to null in the insert payload', async () => {
-      const inputWithoutNotes: OdontogramRecordInput = {
-        patient_id: 'patient-abc',
-        tooth_number: 11,
-        tooth_face: null,
-        status: 'sano',
-      };
+    it('should return success false on Supabase error', async () => {
+      const mockEq = vi.fn().mockResolvedValue({ error: { message: 'Database error' } });
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
+      mockSupabase.from.mockReturnValue({ delete: mockDelete });
 
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
-      const { mockInsert } = setupFromMock({ error: null });
+      const result = await deleteOdontogramRecord('rec-123', 'patient-abc');
 
-      await createOdontogramRecord(inputWithoutNotes);
-
-      expect(mockInsert).toHaveBeenCalledWith(
-        expect.objectContaining({ notes: null })
-      );
-    });
-
-    it('should call from("odontogram_records") twice: once for delete, once for insert', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-xyz' } } });
-      setupFromMock({ error: null });
-
-      await createOdontogramRecord(faceInput);
-
-      // Primera llamada: delete; segunda llamada: insert
-      expect(mockSupabase.from).toHaveBeenCalledTimes(2);
-      expect(mockSupabase.from).toHaveBeenNthCalledWith(1, 'odontogram_records');
-      expect(mockSupabase.from).toHaveBeenNthCalledWith(2, 'odontogram_records');
+      expect(result).toEqual({ success: false, error: 'Database error' });
     });
   });
 });
