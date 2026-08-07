@@ -111,16 +111,20 @@ export default function PatientImaging({
 
     setUploadStatus({ type: "loading" })
 
-    const result = await onUpload(formData)
+    try {
+      const result = await onUpload(formData)
 
-    if (result.success) {
-      setUploadStatus({ type: "success", message: "Estudio de imagen subido correctamente." })
-      setDescription("")
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+      if (result.success) {
+        setUploadStatus({ type: "success", message: "Estudio de imagen subido correctamente." })
+        setDescription("")
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      } else {
+        setUploadStatus({ type: "error", message: result.error })
       }
-    } else {
-      setUploadStatus({ type: "error", message: result.error })
+    } catch (err: any) {
+      setUploadStatus({ type: "error", message: err.message || "Error al subir la imagen. El archivo podría ser demasiado pesado." })
     }
   }
 

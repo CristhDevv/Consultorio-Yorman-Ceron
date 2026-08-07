@@ -130,16 +130,20 @@ export default function PatientDocuments({
 
     setUploadStatus({ type: "loading" })
 
-    const result = await onUpload(formData)
+    try {
+      const result = await onUpload(formData)
 
-    if (result.success) {
-      setUploadStatus({ type: "success", message: "Documento subido correctamente." })
-      setDocumentType("")
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+      if (result.success) {
+        setUploadStatus({ type: "success", message: "Documento subido correctamente." })
+        setDocumentType("")
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      } else {
+        setUploadStatus({ type: "error", message: result.error })
       }
-    } else {
-      setUploadStatus({ type: "error", message: result.error })
+    } catch (err: any) {
+      setUploadStatus({ type: "error", message: err.message || "Error al subir el documento. El archivo podría ser demasiado pesado." })
     }
   }
 
