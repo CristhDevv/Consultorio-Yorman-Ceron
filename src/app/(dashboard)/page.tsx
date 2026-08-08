@@ -1,6 +1,8 @@
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { createClient } from "@/shared/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { resolveActiveBranch } from "@/domains/branches/session"
+import { ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 import {
   Users,
   CalendarDays,
@@ -33,33 +35,50 @@ export default async function DashboardPage() {
 
   const firstName = profile?.full_name?.split(" ")[0] ?? "Profesional"
 
+  // — Sincronización de Sucursal Activa ───────────────────────────────────────
+  const { activeBranchId } = await resolveActiveBranch(user.id, role || "")
+  const isSpecificBranch = activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE
+
   // — Consultas para KPIs en el Servidor ─────────────────────────────────────
   const supabase = await createClient()
 
   // 1. Total Pacientes
-  const { count: totalPatients } = await supabase
+  let patientsQuery = supabase
     .from("patients")
     .select("*", { count: "exact", head: true })
+  if (isSpecificBranch) {
+    patientsQuery = patientsQuery.eq("branch_id", activeBranchId)
+  }
+  const { count: totalPatients } = await patientsQuery
 
   // 2. Citas de Hoy
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
   const todayEnd = new Date()
   todayEnd.setHours(23, 59, 59, 999)
-  const { count: todayAppointments } = await supabase
+
+  let apptQuery = supabase
     .from("appointments")
     .select("*", { count: "exact", head: true })
     .gte("starts_at", todayStart.toISOString())
     .lte("starts_at", todayEnd.toISOString())
+  if (isSpecificBranch) {
+    apptQuery = apptQuery.eq("branch_id", activeBranchId)
+  }
+  const { count: todayAppointments } = await apptQuery
 
   // 3. KPIs de Ingresos (Solo Admin)
   let totalIncome = 0
   let monthlyIncome = 0
 
   if (isAdmin) {
-    const { data: payments } = await supabase
+    let paymentsQuery = supabase
       .from("patient_payments")
       .select("amount, type")
+    if (isSpecificBranch) {
+      paymentsQuery = paymentsQuery.eq("branch_id", activeBranchId)
+    }
+    const { data: payments } = await paymentsQuery
     
     for (const p of payments || []) {
       if (p.type === "pago") totalIncome += p.amount
@@ -69,10 +88,15 @@ export default async function DashboardPage() {
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
-    const { data: monthlyPayments } = await supabase
+
+    let monthlyPaymentsQuery = supabase
       .from("patient_payments")
       .select("amount, type")
       .gte("created_at", startOfMonth.toISOString())
+    if (isSpecificBranch) {
+      monthlyPaymentsQuery = monthlyPaymentsQuery.eq("branch_id", activeBranchId)
+    }
+    const { data: monthlyPayments } = await monthlyPaymentsQuery
 
     for (const p of monthlyPayments || []) {
       if (p.type === "pago") monthlyIncome += p.amount

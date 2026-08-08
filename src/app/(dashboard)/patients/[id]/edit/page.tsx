@@ -1,4 +1,5 @@
 import React from "react"
+import Link from "next/link"
 import { getPatientById, updatePatient, type PatientInput } from "@/domains/patients/actions"
 import PatientForm from "@/domains/patients/components/PatientForm"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
@@ -16,6 +17,24 @@ interface PageProps {
 export default async function EditPatientPage({ params }: PageProps) {
   const { id } = await params
   const patient = await getPatientById(id)
+
+  if (!patient) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 max-w-md mx-auto">
+        <div className="bg-white border border-border text-foreground text-center p-8 rounded-2xl shadow-sm w-full">
+          <h2 className="text-xl font-bold text-foreground mb-2">Paciente No Encontrado</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            El expediente del paciente que intentas editar no existe o ha sido eliminado.
+          </p>
+          <Link href="/patients">
+            <button className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 py-2.5 rounded-lg text-sm w-full transition-colors">
+              Volver al Directorio de Pacientes
+            </button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const { user, role } = await getCurrentUserWithRole()
 

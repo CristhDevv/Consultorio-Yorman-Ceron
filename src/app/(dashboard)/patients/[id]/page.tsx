@@ -1,4 +1,5 @@
 import React from "react"
+import Link from "next/link"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getPatientById } from "@/domains/patients/actions"
 import PatientDetailCard from "@/domains/patients/components/PatientDetailCard"
@@ -37,6 +38,24 @@ export default async function PatientDetailPage({ params }: PageProps) {
 
   // — Datos del paciente ────────────────────────────────────────────────────
   const patient = await getPatientById(id)
+
+  if (!patient) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 max-w-md mx-auto">
+        <div className="bg-white border border-border text-foreground text-center p-8 rounded-2xl shadow-sm w-full">
+          <h2 className="text-xl font-bold text-foreground mb-2">Paciente No Encontrado</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            El expediente del paciente que buscas no existe o ha sido eliminado del sistema.
+          </p>
+          <Link href="/patients">
+            <button className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 py-2.5 rounded-lg text-sm w-full transition-colors">
+              Volver al Directorio de Pacientes
+            </button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   // — Odontograma ───────────────────────────────────────────────────────────
   const odontogramResult = await getOdontogramByPatient(id)
