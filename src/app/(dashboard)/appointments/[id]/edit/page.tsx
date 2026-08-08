@@ -121,6 +121,7 @@ export default async function EditAppointmentPage({ params }: PageProps) {
         initialNotes={appointment.notes ?? ""}
         allowedBranches={allowedBranches}
         initialBranchId={appointment.branch_id}
+        initialAmount={appointment.amount}
       />
     </div>
   )

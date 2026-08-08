@@ -179,6 +179,7 @@ describe('AppointmentForm Component', () => {
         reason: '',
         notes: '',
         branch_id: '',
+        amount: null,
       });
     });
 

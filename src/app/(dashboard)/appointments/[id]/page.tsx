@@ -4,6 +4,7 @@ import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { getAppointmentById } from "@/domains/appointments/actions"
 import AppointmentStatusControl from "@/domains/appointments/components/AppointmentStatusControl"
 import PaymentForm from "@/domains/finance/components/PaymentForm"
+import { getAppointmentPayments } from "@/domains/finance/actions"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card"
 
@@ -67,6 +68,14 @@ function formatDateTime(isoString: string): string {
   }
 }
 
+function formatCurrency(amount: number) {
+  return amount.toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+  })
+}
+
 export default async function AppointmentDetailPage({ params }: PageProps) {
   const { id } = await params
 
@@ -77,6 +86,9 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
   const isAdmin = role === "administrador"
 
   const appointment = await getAppointmentById(id)
+
+  const paymentsResult = await getAppointmentPayments(id)
+  const appointmentPayments = paymentsResult.success ? paymentsResult.data : []
 
   if (!appointment) {
     return (
@@ -183,6 +195,18 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
               </span>
             </div>
 
+            {/* Costo Cita */}
+            <div className="grid grid-cols-3 gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">Costo Cita:</span>
+              <span className="col-span-2 text-sm text-foreground font-bold">
+                {appointment.amount !== null && appointment.amount !== undefined ? (
+                  formatCurrency(appointment.amount)
+                ) : (
+                  <span className="text-red-500 italic font-normal">Sin costo asignado. Edita la cita para definirlo.</span>
+                )}
+              </span>
+            </div>
+
             {/* Motivo */}
             <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-4">
               <span className="text-sm font-semibold text-muted-foreground">Motivo:</span>
@@ -206,10 +230,112 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
 
         {/* Registro de Pagos — solo visible para administradores */}
         {isAdmin && appointment.patients?.id && (
-          <PaymentForm
-            appointmentId={appointment.id}
-            patientId={appointment.patients.id}
-          />
+          <div className="flex flex-col gap-6">
+            <PaymentForm
+              appointmentId={appointment.id}
+              patientId={appointment.patients.id}
+            />
+
+            {/* Desglose de Cobros y Abonos */}
+            <Card className="bg-white border-border text-foreground shadow-sm">
+              <CardHeader className="border-b border-border">
+                <CardTitle className="text-foreground text-lg font-bold">Desglose de Cobros y Abonos</CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Registro cronológico de entradas y anulaciones de saldo para esta cita.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-5 flex flex-col gap-4">
+                {appointmentPayments.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground text-sm italic">
+                    No se han registrado pagos o abonos para esta cita aún.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {/* Resumen Financiero de la Cita */}
+                    <div className="grid grid-cols-3 gap-4 bg-muted/20 border border-border p-4 rounded-xl text-center">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Costo Cita</span>
+                        <p className="text-sm font-extrabold text-foreground mt-0.5">
+                          {appointment.amount !== null && appointment.amount !== undefined ? formatCurrency(appointment.amount) : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Total Abonado</span>
+                        <p className="text-sm font-extrabold text-emerald-600 mt-0.5">
+                          {formatCurrency(
+                            appointmentPayments
+                              .filter((p) => p.type === "pago" && !p.isReversed)
+                              .reduce((acc, p) => acc + p.amount, 0)
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Saldo Restante</span>
+                        <p className="text-sm font-extrabold text-slate-700 mt-0.5">
+                          {appointment.amount !== null && appointment.amount !== undefined
+                            ? formatCurrency(
+                                Math.max(
+                                  0,
+                                  appointment.amount -
+                                    appointmentPayments
+                                      .filter((p) => p.type === "pago" && !p.isReversed)
+                                      .reduce((acc, p) => acc + p.amount, 0)
+                                )
+                              )
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Lista de Movimientos */}
+                    <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto pr-1">
+                      {appointmentPayments.map((p) => {
+                        const isPago = p.type === "pago"
+                        return (
+                          <div
+                            key={p.id}
+                            className={`flex items-center justify-between p-3 rounded-lg border text-xs ${
+                              isPago
+                                ? p.isReversed
+                                  ? "bg-slate-50 border-slate-200 line-through text-slate-400"
+                                  : "bg-emerald-50/10 border-emerald-100 text-slate-700"
+                                : "bg-amber-50/10 border-amber-100 text-slate-700"
+                            }`}
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                                  isPago
+                                    ? p.isReversed
+                                      ? "bg-slate-100 text-slate-400 border border-slate-200"
+                                      : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                                }`}>
+                                  {isPago ? (p.isReversed ? "pago revertido" : "abono") : "reverso"}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                  {new Date(p.createdAt).toLocaleString("es-CO", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            <span className={`font-bold ${isPago ? (p.isReversed ? "text-slate-400" : "text-emerald-600") : "text-amber-600"}`}>
+                              {isPago ? "+" : "-"} {formatCurrency(p.amount)}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

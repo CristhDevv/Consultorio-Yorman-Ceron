@@ -42,6 +42,7 @@ interface AppointmentEditFormProps {
   initialNotes: string
   allowedBranches?: AllowedBranch[]
   initialBranchId?: string | null
+  initialAmount?: number | null
 }
 
 
@@ -57,6 +58,7 @@ export default function AppointmentEditForm({
   initialNotes,
   allowedBranches,
   initialBranchId,
+  initialAmount,
 }: AppointmentEditFormProps) {
   const router = useRouter()
 
@@ -71,6 +73,7 @@ export default function AppointmentEditForm({
   })
   const [reason, setReason] = useState(initialReason)
   const [notes, setNotes] = useState(initialNotes)
+  const [amount, setAmount] = useState<number | "">(initialAmount || "")
 
   // UI Control State
   const [slots, setSlots] = useState<Slot[]>([])
@@ -153,6 +156,7 @@ export default function AppointmentEditForm({
         reason,
         notes,
         branch_id: branchId,
+        amount: amount === "" ? null : Number(amount),
       })
 
       if (res.success) {
@@ -344,6 +348,22 @@ export default function AppointmentEditForm({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Ej: Limpieza dental, dolor de muela, calza..."
+              className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="amount" className="text-foreground font-medium">Costo / Valor del Procedimiento (COP)</Label>
+            <Input
+              id="amount"
+              type="number"
+              min={0}
+              value={amount}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value)
+                setAmount(isNaN(val) ? "" : val)
+              }}
+              placeholder="Ej: 150000"
               className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm"
             />
           </div>

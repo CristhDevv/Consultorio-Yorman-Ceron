@@ -22,6 +22,7 @@ export interface AppointmentInput {
   reason: string
   notes: string
   branch_id: string
+  amount?: number | null
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +140,7 @@ export async function createAppointment(input: AppointmentInput) {
       reason: input.reason || null,
       notes: input.notes || null,
       branch_id: input.branch_id,
+      amount: input.amount !== undefined ? input.amount : null,
       created_by: user.id,
     })
     .select("id")
@@ -298,6 +300,7 @@ export async function updateAppointment(id: string, input: Partial<AppointmentIn
       ...(input.reason !== undefined && { reason: input.reason || null }),
       ...(input.notes !== undefined && { notes: input.notes || null }),
       ...(input.branch_id !== undefined && { branch_id: input.branch_id }),
+      ...(input.amount !== undefined && { amount: input.amount }),
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

@@ -53,6 +53,7 @@ export default function AppointmentForm({ patients, dentists, allowedBranches, d
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [reason, setReason] = useState("")
   const [notes, setNotes] = useState("")
+  const [amount, setAmount] = useState<number | "">("")
 
   // UI Control State
   const [slots, setSlots] = useState<Slot[]>([])
@@ -141,6 +142,7 @@ export default function AppointmentForm({ patients, dentists, allowedBranches, d
         reason,
         notes,
         branch_id: branchId,
+        amount: amount === "" ? null : Number(amount),
       })
 
       if (res.success) {
@@ -380,6 +382,23 @@ export default function AppointmentForm({ patients, dentists, allowedBranches, d
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Ej: Limpieza dental, dolor de muela, calza..."
+              className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="amount" className="text-foreground font-medium">Costo / Valor del Procedimiento (COP)</Label>
+            <Input
+              id="amount"
+              type="number"
+              min={0}
+              disabled={!selectedSlot}
+              value={amount}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value)
+                setAmount(isNaN(val) ? "" : val)
+              }}
+              placeholder="Ej: 150000"
               className="bg-white border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             />
           </div>
