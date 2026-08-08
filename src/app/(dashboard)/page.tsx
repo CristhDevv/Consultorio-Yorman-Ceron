@@ -1,4 +1,5 @@
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
+import { createClient } from "@/shared/lib/supabase/server"
 import { redirect } from "next/navigation"
 import {
   Users,
@@ -32,6 +33,61 @@ export default async function DashboardPage() {
 
   const firstName = profile?.full_name?.split(" ")[0] ?? "Profesional"
 
+  // — Consultas para KPIs en el Servidor ─────────────────────────────────────
+  const supabase = await createClient()
+
+  // 1. Total Pacientes
+  const { count: totalPatients } = await supabase
+    .from("patients")
+    .select("*", { count: "exact", head: true })
+
+  // 2. Citas de Hoy
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+  const { count: todayAppointments } = await supabase
+    .from("appointments")
+    .select("*", { count: "exact", head: true })
+    .gte("starts_at", todayStart.toISOString())
+    .lte("starts_at", todayEnd.toISOString())
+
+  // 3. KPIs de Ingresos (Solo Admin)
+  let totalIncome = 0
+  let monthlyIncome = 0
+
+  if (isAdmin) {
+    const { data: payments } = await supabase
+      .from("patient_payments")
+      .select("amount, type")
+    
+    for (const p of payments || []) {
+      if (p.type === "pago") totalIncome += p.amount
+      else if (p.type === "reverso") totalIncome -= p.amount
+    }
+
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+    const { data: monthlyPayments } = await supabase
+      .from("patient_payments")
+      .select("amount, type")
+      .gte("created_at", startOfMonth.toISOString())
+
+    for (const p of monthlyPayments || []) {
+      if (p.type === "pago") monthlyIncome += p.amount
+      else if (p.type === "reverso") monthlyIncome -= p.amount
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString("es-CO", {
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0,
+    })
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Welcome banner */}
@@ -47,6 +103,53 @@ export default async function DashboardPage() {
             {isAdmin ? "Administrador" : "Odontólogo"} · Sistema activo
           </div>
         </div>
+      </div>
+
+      {/* KPIs Section */}
+      <div className={`grid grid-cols-2 ${isAdmin ? "md:grid-cols-4" : "md:grid-cols-2"} gap-4 mb-8`}>
+        <div className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Citas de Hoy</p>
+            <p className="text-2xl font-extrabold text-[#1E293B] mt-1.5">{todayAppointments || 0}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+            <CalendarDays className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Total Pacientes</p>
+            <p className="text-2xl font-extrabold text-[#1E293B] mt-1.5">{totalPatients || 0}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100 shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+        </div>
+
+        {isAdmin && (
+          <>
+            <div className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Ingresos del Mes</p>
+                <p className="text-lg font-extrabold text-emerald-600 mt-1.5">{formatCurrency(monthlyIncome)}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shrink-0">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Total Neto</p>
+                <p className="text-lg font-extrabold text-teal-700 mt-1.5">{formatCurrency(totalIncome)}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center border border-teal-100 shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Quick access cards */}
