@@ -156,6 +156,31 @@ export async function registerPatientPayment(
       }
     }
 
+    // Case D: Appointment has no defined amount
+    // "La cita no tiene monto definido. Establezca appointments.amount antes de registrar pagos."
+    if (rpcError.message.includes("La cita no tiene monto definido")) {
+      return {
+        success: false,
+        error: "Esta cita aún no tiene asignado un costo o valor de tratamiento. Por favor, edita la cita y colócale un costo antes de proceder con el cobro.",
+      }
+    }
+
+    // Case E: Appointment does not exist
+    if (rpcError.message.includes("no existe")) {
+      return {
+        success: false,
+        error: "La cita seleccionada no existe o ha sido eliminada del sistema.",
+      }
+    }
+
+    // Case F: Administrative permissions restriction
+    if (rpcError.message.includes("Solo un administrador")) {
+      return {
+        success: false,
+        error: "No tienes permisos para registrar pagos en el sistema. Esta acción está reservada únicamente para administradores.",
+      }
+    }
+
     // Fallback: Default DB message
     return { success: false, error: rpcError.message }
   }

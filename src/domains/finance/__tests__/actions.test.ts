@@ -391,7 +391,7 @@ describe('registerPatientPayment', () => {
   // ───────────────────────────────────────────────────────────────────────────
   // 9. Cita sin monto definido — fallback del mapeo de errores
   // ───────────────────────────────────────────────────────────────────────────
-  it('9. cita sin monto definido: el mensaje del RPC no coincide con ningún regex y se devuelve como fallback', async () => {
+  it('9. cita sin monto definido: se mapea y se devuelve un mensaje de error amigable en español', async () => {
     // Arrange — mensaje exacto definido en la función SQL para este caso
     setupFrom(mockSupabase);
     mockSupabase.rpc.mockResolvedValue({
@@ -405,13 +405,13 @@ describe('registerPatientPayment', () => {
     // Act
     const result = await registerPatientPayment(VALID_PAGO);
 
-    // Assert — el mensaje no coincide con ningún regex definido, se devuelve el mensaje original del RPC
+    // Assert — el mensaje se mapea correctamente
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toBe(
-        'La cita no tiene monto definido. Establezca appointments.amount antes de registrar pagos.'
+        'Esta cita aún no tiene asignado un costo o valor de tratamiento. Por favor, edita la cita y colócale un costo antes de proceder con el cobro.'
       );
-      // Verificar que no se extrajeron datos extra (no aplica ningún regex)
+      // Verificar que no se extrajeron datos extra
       expect(result.availableBalance).toBeUndefined();
       expect(result.originalAmount).toBeUndefined();
     }
