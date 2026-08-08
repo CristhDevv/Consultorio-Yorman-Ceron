@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
+  LayoutDashboard,
   Users,
   CalendarDays,
   Package,
@@ -21,6 +22,7 @@ import { BranchInfo, ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 import { setActiveBranchCookie } from "@/domains/branches/actions"
 
 const NAV_ITEMS = [
+  { href: "/",               label: "Inicio",           icon: LayoutDashboard, roles: ["administrador", "odontologo"] },
   { href: "/patients",       label: "Pacientes",       icon: Users,          roles: ["administrador", "odontologo"] },
   { href: "/appointments",   label: "Citas",            icon: CalendarDays,   roles: ["administrador", "odontologo"] },
   { href: "/finance",        label: "Finanzas",         icon: DollarSign,     roles: ["administrador", "odontologo"] },
@@ -70,14 +72,16 @@ function Sidebar({
       <nav className={`sidebar-nav ${open ? "open" : ""}`}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-[var(--sidebar-border)]">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #00C8B4 0%, #00A896 100%)" }}>
-            <Stethoscope className="w-5 h-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-[#1E293B] truncate leading-tight">Consultorio</p>
-            <p className="text-[10px] text-[#64748B] font-medium uppercase tracking-wider">Odontológico</p>
-          </div>
+          <Link href="/" onClick={onClose} className="flex items-center gap-3 min-w-0 group hover:opacity-90 transition-opacity">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-xs"
+              style={{ background: "linear-gradient(135deg, #00C8B4 0%, #00A896 100%)" }}>
+              <Stethoscope className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[#1E293B] truncate leading-tight group-hover:text-primary transition-colors">Consultorio</p>
+              <p className="text-[10px] text-[#64748B] font-medium uppercase tracking-wider">Odontológico</p>
+            </div>
+          </Link>
           <button
             className="ml-auto md:hidden text-[#64748B] hover:text-[#1E293B] transition-colors"
             onClick={onClose}
@@ -115,7 +119,9 @@ function Sidebar({
           <p className="text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-3 mb-2">Menú Principal</p>
           {visibleItems.map(item => {
             const Icon = item.icon
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            const isActive = item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(item.href + "/")
             return (
               <Link
                 key={item.href}
@@ -211,13 +217,13 @@ export default function DashboardClientLayout({
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ background: "linear-gradient(135deg, #00C8B4 0%, #00A896 100%)" }}>
                 <Stethoscope className="w-4 h-4 text-white" />
               </div>
               <span className="text-sm font-bold text-[#1E293B] hidden sm:inline">Consultorio</span>
-            </div>
+            </Link>
 
             {/* Mobile Branch Selector */}
             <select
