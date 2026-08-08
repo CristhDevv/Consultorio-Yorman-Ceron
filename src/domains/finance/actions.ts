@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/shared/lib/supabase/server"
+import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
+import { resolveActiveBranch } from "@/domains/branches/session"
+import { ALL_BRANCHES_VALUE } from "@/domains/branches/constants"
 
 // Shared Action Result type
 export type ActionResult<T = null> =
@@ -413,5 +416,305 @@ export async function getAppointmentPayments(
     success: true,
     data: result,
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4. Métricas Ejecutivas de Finanzas, Utilidades y Cartera
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type ExecutiveFinancialOverview = {
+  totalRevenue: number
+  monthlyRevenue: number
+  totalExpenses: number
+  monthlyExpenses: number
+  netProfit: number
+  monthlyNetProfit: number
+  profitMargin: number
+  totalAccountsReceivable: number
+  pendingAppointmentsCount: number
+  totalPaymentsCount: number
+  cashFlow: number
+}
+
+export type AccountReceivableItem = {
+  appointmentId: string
+  patientId: string
+  patientName: string
+  patientDocument: string
+  appointmentDate: string
+  reason: string
+  totalAmount: number
+  paidAmount: number
+  pendingBalance: number
+}
+
+export type InventoryExpenseItem = {
+  id: string
+  productName: string
+  productUnit: string
+  quantity: number
+  unitCost: number
+  totalCost: number
+  date: string
+  reason: string | null
+  type: string
+}
+
+export async function getExecutiveFinancialOverview(): Promise<ActionResult<ExecutiveFinancialOverview>> {
+  const supabase = await createClient()
+  const { user, role } = await getCurrentUserWithRole()
+
+  if (!user) {
+    return { success: false, error: "No hay sesión activa." }
+  }
+
+  const { activeBranchId } = await resolveActiveBranch(user.id, role || "")
+
+  // 1. Ingresos y pagos
+  let paymentsQuery = supabase
+    .from("patient_payments")
+    .select("id, amount, type, created_at, branch_id, appointment_id")
+
+  if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
+    paymentsQuery = paymentsQuery.eq("branch_id", activeBranchId)
+  }
+  const { data: paymentsData, error: paymentsError } = await paymentsQuery
+
+  if (paymentsError) {
+    return { success: false, error: paymentsError.message }
+  }
+
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+
+  let totalRevenue = 0
+  let monthlyRevenue = 0
+  let totalPaymentsCount = 0
+  const paymentsByAppt: Record<string, number> = {}
+
+  for (const p of paymentsData || []) {
+    const isPago = p.type === "pago"
+    const val = Number(p.amount) * (isPago ? 1 : -1)
+    totalRevenue += val
+    if (isPago) totalPaymentsCount++
+
+    if (p.appointment_id) {
+      paymentsByAppt[p.appointment_id] = (paymentsByAppt[p.appointment_id] || 0) + val
+    }
+
+    const pDate = new Date(p.created_at)
+    if (pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
+      monthlyRevenue += val
+    }
+  }
+
+  // 2. Gastos en compras y entradas de inventario
+  let movementsQuery = supabase
+    .from("inventory_movements")
+    .select("quantity, type, created_at, branch_id, inventory_products(cost_price)")
+    .eq("type", "entrada")
+
+  if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
+    movementsQuery = movementsQuery.eq("branch_id", activeBranchId)
+  }
+  const { data: movementsData } = await movementsQuery
+
+  let totalExpenses = 0
+  let monthlyExpenses = 0
+
+  for (const m of movementsData || []) {
+    const product = m.inventory_products as unknown as { cost_price?: number } | null
+    const cost = Number(product?.cost_price ?? 0)
+    const totalCost = Number(m.quantity) * cost
+    totalExpenses += totalCost
+
+    const mDate = new Date(m.created_at)
+    if (mDate.getMonth() === currentMonth && mDate.getFullYear() === currentYear) {
+      monthlyExpenses += totalCost
+    }
+  }
+
+  // 3. Cuentas por Cobrar (Saldos pendientes en Citas)
+  let appointmentsQuery = supabase
+    .from("appointments")
+    .select("id, amount, branch_id, status")
+    .not("amount", "is", null)
+    .neq("status", "cancelada")
+
+  if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
+    appointmentsQuery = appointmentsQuery.eq("branch_id", activeBranchId)
+  }
+  const { data: appointmentsData } = await appointmentsQuery
+
+  let totalAccountsReceivable = 0
+  let pendingAppointmentsCount = 0
+
+  for (const appt of appointmentsData || []) {
+    const total = Number(appt.amount || 0)
+    const paid = paymentsByAppt[appt.id] || 0
+    const pending = Math.max(0, total - paid)
+    if (pending > 0) {
+      totalAccountsReceivable += pending
+      pendingAppointmentsCount++
+    }
+  }
+
+  const netProfit = totalRevenue - totalExpenses
+  const monthlyNetProfit = monthlyRevenue - monthlyExpenses
+  const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
+  const cashFlow = totalRevenue - totalExpenses
+
+  return {
+    success: true,
+    data: {
+      totalRevenue,
+      monthlyRevenue,
+      totalExpenses,
+      monthlyExpenses,
+      netProfit,
+      monthlyNetProfit,
+      profitMargin,
+      totalAccountsReceivable,
+      pendingAppointmentsCount,
+      totalPaymentsCount,
+      cashFlow,
+    },
+  }
+}
+
+export async function getAccountsReceivableList(): Promise<ActionResult<AccountReceivableItem[]>> {
+  const supabase = await createClient()
+  const { user, role } = await getCurrentUserWithRole()
+
+  if (!user) {
+    return { success: false, error: "No hay sesión activa." }
+  }
+
+  const { activeBranchId } = await resolveActiveBranch(user.id, role || "")
+
+  let apptQuery = supabase
+    .from("appointments")
+    .select(`
+      id,
+      amount,
+      starts_at,
+      reason,
+      status,
+      branch_id,
+      patients (
+        id,
+        full_name,
+        document_id
+      )
+    `)
+    .not("amount", "is", null)
+    .neq("status", "cancelada")
+    .order("starts_at", { ascending: false })
+
+  if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
+    apptQuery = apptQuery.eq("branch_id", activeBranchId)
+  }
+
+  const { data: appts, error: apptsError } = await apptQuery
+  if (apptsError) {
+    return { success: false, error: apptsError.message }
+  }
+
+  const apptIds = (appts || []).map((a) => a.id)
+  const paidMap: Record<string, number> = {}
+
+  if (apptIds.length > 0) {
+    const { data: payments } = await supabase
+      .from("patient_payments")
+      .select("appointment_id, amount, type")
+      .in("appointment_id", apptIds)
+
+    for (const p of payments || []) {
+      const val = Number(p.amount) * (p.type === "pago" ? 1 : -1)
+      paidMap[p.appointment_id] = (paidMap[p.appointment_id] || 0) + val
+    }
+  }
+
+  const items: AccountReceivableItem[] = []
+  for (const a of appts || []) {
+    const total = Number(a.amount || 0)
+    const paid = paidMap[a.id] || 0
+    const pending = Math.max(0, total - paid)
+
+    if (pending > 0) {
+      const patient = a.patients as unknown as { id: string; full_name: string; document_id: string } | null
+      items.push({
+        appointmentId: a.id,
+        patientId: patient?.id ?? "",
+        patientName: patient?.full_name ?? "Paciente",
+        patientDocument: patient?.document_id ?? "—",
+        appointmentDate: a.starts_at,
+        reason: a.reason || "Consulta Odontológica",
+        totalAmount: total,
+        paidAmount: paid,
+        pendingBalance: pending,
+      })
+    }
+  }
+
+  return { success: true, data: items }
+}
+
+export async function getInventoryExpenseList(): Promise<ActionResult<InventoryExpenseItem[]>> {
+  const supabase = await createClient()
+  const { user, role } = await getCurrentUserWithRole()
+
+  if (!user) {
+    return { success: false, error: "No hay sesión activa." }
+  }
+
+  const { activeBranchId } = await resolveActiveBranch(user.id, role || "")
+
+  let query = supabase
+    .from("inventory_movements")
+    .select(`
+      id,
+      quantity,
+      type,
+      reason,
+      created_at,
+      branch_id,
+      inventory_products (
+        name,
+        unit,
+        cost_price
+      )
+    `)
+    .order("created_at", { ascending: false })
+    .limit(50)
+
+  if (activeBranchId && activeBranchId !== ALL_BRANCHES_VALUE) {
+    query = query.eq("branch_id", activeBranchId)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  const items: InventoryExpenseItem[] = (data || []).map((m) => {
+    const product = m.inventory_products as unknown as { name?: string; unit?: string; cost_price?: number } | null
+    const unitCost = Number(product?.cost_price ?? 0)
+    const totalCost = Number(m.quantity) * unitCost
+    return {
+      id: m.id,
+      productName: product?.name ?? "Insumo clínico",
+      productUnit: product?.unit ?? "Unid.",
+      quantity: m.quantity,
+      unitCost,
+      totalCost,
+      date: m.created_at,
+      reason: m.reason,
+      type: m.type,
+    }
+  })
+
+  return { success: true, data: items }
 }
 

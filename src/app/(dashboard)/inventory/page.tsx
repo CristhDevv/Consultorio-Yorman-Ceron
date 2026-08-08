@@ -44,21 +44,24 @@ export default async function InventoryPage() {
             <TableRow className="border-b border-border hover:bg-transparent">
               <TableHead className="text-muted-foreground font-semibold">Producto</TableHead>
               <TableHead className="text-muted-foreground font-semibold">Unidad</TableHead>
+              <TableHead className="text-right text-muted-foreground font-semibold">Costo Unit.</TableHead>
               <TableHead className="text-center text-muted-foreground font-semibold">Stock Actual</TableHead>
-              <TableHead className="text-center text-muted-foreground font-semibold">Stock Mínimo</TableHead>
+              <TableHead className="text-right text-muted-foreground font-semibold">Valor Total</TableHead>
               <TableHead className="text-center text-muted-foreground font-semibold">Estado</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.length === 0 ? (
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   No hay productos registrados en el inventario.
                 </TableCell>
               </TableRow>
             ) : (
               products.map((product) => {
                 const isLowStock = product.current_stock <= product.min_stock
+                const costPrice = (product as unknown as { cost_price?: number }).cost_price ?? 0
+                const totalValue = costPrice * product.current_stock
 
                 return (
                   <TableRow
@@ -71,11 +74,14 @@ export default async function InventoryPage() {
                     <TableCell className="text-muted-foreground">
                       {product.unit}
                     </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-foreground">
+                      ${Number(costPrice).toLocaleString("es-CO")}
+                    </TableCell>
                     <TableCell className="text-center font-semibold text-foreground">
                       {product.current_stock}
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground">
-                      {product.min_stock}
+                    <TableCell className="text-right font-mono text-xs font-bold text-foreground">
+                      ${Number(totalValue).toLocaleString("es-CO")}
                     </TableCell>
                     <TableCell className="text-center">
                       {isLowStock ? (

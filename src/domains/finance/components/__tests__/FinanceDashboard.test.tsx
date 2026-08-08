@@ -21,7 +21,7 @@ describe("FinanceDashboard Component", () => {
   })
 
   it("1. sin paciente seleccionado muestra el mensaje de placeholder inicial", () => {
-    render(<FinanceDashboard patients={mockPatients} />)
+    render(<FinanceDashboard patients={mockPatients} initialTab="pacientes" />)
 
     expect(
       screen.getByText(/Selecciona un paciente a la izquierda para ver su historial de transacciones/i)
@@ -29,7 +29,7 @@ describe("FinanceDashboard Component", () => {
   })
 
   it("2. escribir en el buscador filtra y muestra hasta 5 resultados coincidentes por nombre o documento", () => {
-    render(<FinanceDashboard patients={mockPatients} />)
+    render(<FinanceDashboard patients={mockPatients} initialTab="pacientes" />)
 
     const searchInput = screen.getByPlaceholderText(/Nombre o número de documento/i)
 
@@ -53,7 +53,7 @@ describe("FinanceDashboard Component", () => {
       },
     })
 
-    render(<FinanceDashboard patients={mockPatients} />)
+    render(<FinanceDashboard patients={mockPatients} initialTab="pacientes" />)
 
     const searchInput = screen.getByPlaceholderText(/Nombre o número de documento/i)
     fireEvent.change(searchInput, { target: { value: "Arturo" } })
@@ -83,7 +83,7 @@ describe("FinanceDashboard Component", () => {
       .mockImplementationOnce(() => firstPromise)
       .mockImplementationOnce(() => secondPromise)
 
-    render(<FinanceDashboard patients={mockPatients} />)
+    render(<FinanceDashboard patients={mockPatients} initialTab="pacientes" />)
 
     // --- PASO A: Seleccionar el primer paciente ---
     const searchInput = screen.getByPlaceholderText(/Nombre o número de documento/i)

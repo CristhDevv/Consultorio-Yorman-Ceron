@@ -378,6 +378,7 @@ describe('createInventoryProduct', () => {
       unit: 'Cajas',
       min_stock: 5,
       current_stock: 50,
+      cost_price: 0,
       created_by: ADMIN_USER.id,
       branch_id: undefined,
     });
@@ -450,6 +451,7 @@ describe('createInventoryProduct', () => {
       unit: 'Cajas',
       min_stock: 5,
       current_stock: 50,
+      cost_price: 0,
       created_by: ADMIN_USER.id,
       branch_id: 'branch-uuid',
     });

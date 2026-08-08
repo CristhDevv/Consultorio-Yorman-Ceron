@@ -253,6 +253,7 @@ export type Database = {
       inventory_products: {
         Row: {
           branch_id: string
+          cost_price: number
           created_at: string
           created_by: string
           current_stock: number
@@ -264,6 +265,7 @@ export type Database = {
         }
         Insert: {
           branch_id: string
+          cost_price?: number
           created_at?: string
           created_by: string
           current_stock?: number
@@ -275,6 +277,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string
+          cost_price?: number
           created_at?: string
           created_by?: string
           current_stock?: number

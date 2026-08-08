@@ -2,6 +2,11 @@ import React from "react"
 import { getCurrentUserWithRole } from "@/shared/lib/supabase/auth"
 import { redirect } from "next/navigation"
 import { getPatients } from "@/domains/patients/actions"
+import {
+  getExecutiveFinancialOverview,
+  getAccountsReceivableList,
+  getInventoryExpenseList,
+} from "@/domains/finance/actions"
 import FinanceDashboard from "@/domains/finance/components/FinanceDashboard"
 
 export default async function FinancePage() {
@@ -16,10 +21,32 @@ export default async function FinancePage() {
     redirect("/portal")
   }
 
-  // 3. Load all patients to populate the autocomplete filter
-  const patientsData = await getPatients()
+  // Cargar datos financieros en paralelo
+  const [patientsData, metricsRes, receivableRes, expensesRes] = await Promise.all([
+    getPatients(),
+    getExecutiveFinancialOverview(),
+    getAccountsReceivableList(),
+    getInventoryExpenseList(),
+  ])
 
-  // Mapear solo los campos necesarios para pasar un payload optimizado
+  const defaultMetrics = {
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    totalExpenses: 0,
+    monthlyExpenses: 0,
+    netProfit: 0,
+    monthlyNetProfit: 0,
+    profitMargin: 0,
+    totalAccountsReceivable: 0,
+    pendingAppointmentsCount: 0,
+    totalPaymentsCount: 0,
+    cashFlow: 0,
+  }
+
+  const metrics = metricsRes.success ? metricsRes.data : defaultMetrics
+  const accountsReceivable = receivableRes.success ? receivableRes.data : []
+  const inventoryExpenses = expensesRes.success ? expensesRes.data : []
+
   const patients = patientsData.map((p) => ({
     id: p.id,
     full_name: p.full_name,
@@ -28,6 +55,9 @@ export default async function FinancePage() {
 
   return (
     <FinanceDashboard
+      metrics={metrics}
+      accountsReceivable={accountsReceivable}
+      inventoryExpenses={inventoryExpenses}
       patients={patients}
     />
   )

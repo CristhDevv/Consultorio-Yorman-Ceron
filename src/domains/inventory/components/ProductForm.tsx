@@ -36,6 +36,8 @@ export default function ProductForm({ allowedBranches, defaultBranchId }: Produc
 
     const minStock = parseInt(minStockRaw, 10)
     const currentStock = parseInt(currentStockRaw, 10)
+    const costPriceRaw = formData.get("costPrice") as string
+    const costPrice = costPriceRaw ? parseFloat(costPriceRaw) : 0
 
     if (!name) {
       setState({ status: "error", message: "El nombre del producto no puede estar vacío." })
@@ -55,7 +57,7 @@ export default function ProductForm({ allowedBranches, defaultBranchId }: Produc
     }
 
     startTransition(async () => {
-      const result = await createInventoryProduct({ name, unit, minStock, currentStock, branchId })
+      const result = await createInventoryProduct({ name, unit, minStock, currentStock, branchId, costPrice })
 
       if (result.success) {
         formRef.current?.reset()
@@ -192,12 +194,12 @@ export default function ProductForm({ allowedBranches, defaultBranchId }: Produc
         </div>
 
         {/* Stock mínimo */}
-        <div className="flex flex-col gap-1.5 sm:col-span-2">
+        <div className="flex flex-col gap-1.5">
           <label
             htmlFor="product-min-stock"
             className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
           >
-            Stock Mínimo (Alerta de Stock Bajo) <span className="text-red-650">*</span>
+            Stock Mínimo (Alerta) <span className="text-red-650">*</span>
           </label>
           <input
             id="product-min-stock"
@@ -207,6 +209,29 @@ export default function ProductForm({ allowedBranches, defaultBranchId }: Produc
             step={1}
             required
             placeholder="Ej: 5"
+            className="bg-white border border-border rounded-lg px-3 py-2.5 text-sm text-foreground
+                       placeholder:text-muted-foreground/60
+                       focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                       disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            disabled={isPending}
+          />
+        </div>
+
+        {/* Precio de Costo Unitario */}
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="product-cost-price"
+            className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+          >
+            Precio de Costo Unitario (COP)
+          </label>
+          <input
+            id="product-cost-price"
+            name="costPrice"
+            type="number"
+            min={0}
+            step="any"
+            placeholder="Ej: 15000"
             className="bg-white border border-border rounded-lg px-3 py-2.5 text-sm text-foreground
                        placeholder:text-muted-foreground/60
                        focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary

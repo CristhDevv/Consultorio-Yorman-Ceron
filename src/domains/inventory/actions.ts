@@ -158,6 +158,7 @@ export type ProductInput = {
   minStock: number
   currentStock: number
   branchId: string
+  costPrice?: number
 }
 
 export async function createInventoryProduct(
@@ -203,6 +204,8 @@ export async function createInventoryProduct(
     return { success: false, error: "El stock inicial debe ser un número entero mayor o igual a cero." }
   }
 
+  const costPrice = input.costPrice !== undefined ? Number(input.costPrice) : 0
+
   // — Insertar producto en la base de datos ──────────────────────────────────
   const { data, error } = await supabase
     .from("inventory_products")
@@ -211,6 +214,7 @@ export async function createInventoryProduct(
       unit: input.unit.trim(),
       min_stock: input.minStock,
       current_stock: input.currentStock,
+      cost_price: isNaN(costPrice) || costPrice < 0 ? 0 : costPrice,
       created_by: user.id,
       branch_id: input.branchId,
     })
