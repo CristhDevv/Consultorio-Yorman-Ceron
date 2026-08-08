@@ -117,7 +117,10 @@ export default function AppointmentEditForm({
       }
 
       setLoadingSlots(true)
-      setSelectedSlot(null)
+      const isInitial = selectedDentistId === initialDentistId && selectedDate === initialDate
+      if (!isInitial) {
+        setSelectedSlot(null)
+      }
       setErrorMsg(null)
 
       try {
